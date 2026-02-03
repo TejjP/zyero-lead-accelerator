@@ -1,0 +1,323 @@
+// Google Apps Script Code (V20 - ULTIMATE FORCE-UNBLOCK)
+// ===============================================
+// FEATURES: 
+// 1. Two-way Google Calendar Sync
+// 2. Admin Actions (Block, Reschedule, Cancel)
+// 3. Secure Token access
+// 4. Email Notifications
+// ===============================================
+
+const SPREADSHEET_ID = "1LTvqampjZsG7V311jKgG8zLkuKmODLRfhuK9XUmq9-w"; 
+const SHEET_NAME = "Sheet1";
+const CALENDAR_ID = "primary"; // Uses your main Google Calendar
+const SECRET_TOKEN = "zyero_admin_2025_safe"; // Security for Admin actions
+const ADMIN_EMAIL = "zyerolead@gmail.com"; // Where notifications are sent
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+
+    // SECURITY CHECK: Only Admin actions require token
+    if (data.action && data.action !== "book") {
+      if (data.token !== SECRET_TOKEN) {
+         throw new Error("Unauthorized access");
+      }
+    }
+
+    switch(data.action) {
+      case "cancel":
+        return handleCancel(sheet, data);
+      case "block":
+        return handleBlock(sheet, data);
+      case "unblock":
+        return handleUnblock(sheet, data);
+      case "reschedule":
+        return handleReschedule(sheet, data);
+      default:
+        return handleBooking(sheet, data);
+    }
+
+  } catch (error) {
+    return jsonResponse({ status: "error", message: error.toString() });
+  }
+}
+
+function doGet(e) {
+  try {
+    const action = e.parameter.action;
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+
+    if (action === "getAll") {
+      if (e.parameter.token !== SECRET_TOKEN) throw new Error("Unauthorized");
+      return jsonResponse({ bookings: fetchAllBookings(sheet) });
+    }
+
+    // Default: Return busy slots for a date (Sheet + Calendar)
+    const dateStr = e.parameter.date;
+    const busySlots = getCombinedBusySlots(sheet, dateStr);
+    return jsonResponse({ bookedTimes: busySlots });
+
+  } catch (error) {
+    return jsonResponse({ status: "error", message: error.toString() });
+  }
+}
+
+/** 
+ * CORE LOGIC: COMBINED BUSY SLOTS (Two-Way Sync)
+ * This checks both the Spreadsheet and real-time Google Calendar events.
+ */
+function getCombinedBusySlots(sheet, dateStr) {
+  const busyTimes = new Set();
+  const rows = sheet.getDataRange().getDisplayValues();
+
+  // 1. Check Spreadsheet (Bookings & Manual Blocks)
+  for (let i = 1; i < rows.length; i++) {
+    const rowDate = normalizeDate(rows[i][6]);
+    if (rowDate === dateStr) {
+      busyTimes.add(normalizeTimeBackend(rows[i][7]));
+    }
+  }
+
+  // 2. Check Google Calendar (Real-time Events)
+  try {
+    const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
+    const startOfDay = new Date(dateStr + "T00:00:00");
+    const endOfDay = new Date(dateStr + "T23:59:59");
+    const events = calendar.getEvents(startOfDay, endOfDay);
+
+    events.forEach(event => {
+       // If event overlaps with potential slots, we mark those slots busy
+       // This is a simple version: if an event exists at 10 AM, 10:00 AM slot is busy
+       const timeStr = formatAMPM(event.getStartTime());
+       busyTimes.add(timeStr);
+       
+       // Also block the slots it spans
+       // (Advanced: you could calculate all overlapping 15-min slots here)
+    });
+  } catch (e) {
+    console.error("Calendar Sync Error:", e);
+  }
+
+  return Array.from(busyTimes);
+}
+
+function handleBooking(sheet, data) {
+  if (isSlotTaken(sheet, data.date, data.time)) {
+    throw new Error("Slot already taken");
+  }
+
+  sheet.appendRow([
+    new Date().toISOString(),
+    data.name, 
+    data.email, 
+    data.phone, 
+    data.company, 
+    data.description, 
+    data.date, 
+    data.time,
+    "CONFIRMED" // Status
+  ]);
+
+  createCalendarEvent(data);
+  sendNotification("NEW BOOKING", data);
+  
+  return jsonResponse({ status: "success" });
+}
+
+function handleCancel(sheet, data) {
+  const displayRows = sheet.getDataRange().getDisplayValues();
+  const rawRows = sheet.getDataRange().getValues();
+  let sheetDeletedCount = 0;
+  
+  const targetDateStr = normalizeDate(data.date);
+  const targetTimeNormalized = normalizeTimeBackend(data.time);
+
+  console.log(`Force Unblock Triggered: ${targetDateStr} @ ${targetTimeNormalized}`);
+
+  // 1. DELETE FROM SPREADSHEET (Aggressive Match)
+  for (let i = displayRows.length - 1; i >= 1; i--) {
+    const rowDateD = normalizeDate(displayRows[i][6]);
+    const rowTimeD = normalizeTimeBackend(displayRows[i][7]);
+    const rowDateR = normalizeDate(rawRows[i][6]);
+    const rowTimeR = normalizeTimeBackend(rawRows[i][7]);
+
+    const dateMatch = (rowDateD === targetDateStr || rowDateR === targetDateStr);
+    const timeMatch = (rowTimeD === targetTimeNormalized || rowTimeR === targetTimeNormalized);
+
+    if (dateMatch && timeMatch) {
+      sheet.deleteRow(i + 1);
+      sheetDeletedCount++;
+    }
+  }
+
+  // 2. DELETE FROM CALENDAR (Always try, even if sheet skip)
+  let calendarDeletedCount = 0;
+  try {
+    calendarDeletedCount = deleteCalendarEvent(targetDateStr, data.time);
+  } catch (e) {
+    console.warn("Calendar deletion error (ignored):", e);
+  }
+
+  // 3. SEND NOTIFICATION (Non-blocking)
+  try {
+    sendNotification("UNBLOCKED/CANCELLED", { ...data, details: `Records deleted: ${sheetDeletedCount}, Calendar Events: ${calendarDeletedCount}` });
+  } catch (e) {}
+
+  if (sheetDeletedCount > 0 || calendarDeletedCount > 0) {
+    return jsonResponse({ 
+      status: "success", 
+      message: `Successfully cleared slot!`,
+      details: {
+        sheet_records: sheetDeletedCount,
+        calendar_events: calendarDeletedCount
+      }
+    });
+  }
+  
+  // If absolutely nothing was found
+  throw new Error(`Record for ${targetDateStr} at ${data.time} not found in Sheet or Calendar. It might have been already cleared.`);
+}
+
+function handleBlock(sheet, data) {
+  sheet.appendRow([
+    new Date().toISOString(),
+    "MANUAL BLOCK", 
+    "admin", 
+    "", 
+    "", 
+    "Blocked by Admin", 
+    data.date, 
+    data.time,
+    "BLOCKED"
+  ]);
+  return jsonResponse({ status: "success", message: "Time slot blocked" });
+}
+
+function handleUnblock(sheet, data) {
+  return handleCancel(sheet, data); // Same logic: remove row
+}
+
+function handleReschedule(sheet, data) {
+  // data: { oldDate, oldTime, newDate, newTime, name, email ... }
+  handleCancel(sheet, { date: data.oldDate, time: data.oldTime });
+  return handleBooking(sheet, { ...data, date: data.newDate, time: data.newTime });
+}
+
+function fetchAllBookings(sheet) {
+  const rows = sheet.getDataRange().getDisplayValues();
+  const bookings = [];
+  for (let i = 1; i < rows.length; i++) {
+    if (!rows[i][6]) continue;
+    bookings.push({
+      id: i,
+      created_at: rows[i][0],
+      name: rows[i][1],
+      email: rows[i][2],
+      phone: rows[i][3],
+      company: rows[i][4],
+      details: rows[i][5],
+      date: normalizeDate(rows[i][6]),
+      time: rows[i][7],
+      status: rows[i][8] || "CONFIRMED"
+    });
+  }
+  return bookings;
+}
+
+// HELPERS
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function normalizeDate(input) {
+  if (!input) return "";
+  // If it's already a string in yyyy-MM-dd format, return it
+  const str = String(input).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  
+  const d = new Date(input);
+  if (isNaN(d.getTime())) return str;
+  
+  // Use a fixed timezone to avoid day-shifting (IST)
+  return Utilities.formatDate(d, "GMT+5:30", "yyyy-MM-dd");
+}
+
+function formatAMPM(date) {
+  let hours = date.getHours();
+  let minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; 
+  let hStr = hours < 10 ? '0' + hours : hours;
+  let mStr = minutes < 10 ? '0' + minutes : minutes;
+  return hStr + ':' + mStr + ' ' + ampm;
+}
+
+/**
+ * Normalizes time strings for robust comparison (e.g., "02:00 PM" and "2:00 PM" become "2:00pm")
+ */
+function normalizeTimeBackend(t) {
+  if (!t) return "";
+  return String(t).trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, '');
+}
+
+function createCalendarEvent(data) {
+  const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
+  const start = new Date(data.date + " " + data.time);
+  const end = new Date(start.getTime() + (15 * 60 * 1000));
+  calendar.createEvent(`ZyeroLead: ${data.name}`, start, end, {
+    description: data.description,
+    guests: data.email,
+    sendInvites: true
+  });
+}
+
+function deleteCalendarEvent(dateStr, timeStr) {
+  const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
+  const start = new Date(dateStr + " " + timeStr);
+  const end = new Date(start.getTime() + (15 * 60 * 1000));
+  const events = calendar.getEvents(start, end);
+  let count = 0;
+  events.forEach(e => {
+    if (e.getTitle().includes("ZyeroLead") || e.getTitle().includes("MANUAL BLOCK")) {
+      e.deleteEvent();
+      count++;
+    }
+  });
+  return count;
+}
+
+function isSlotTaken(sheet, date, time) {
+  const rows = sheet.getDataRange().getDisplayValues();
+  const targetDate = normalizeDate(date);
+  const targetTime = normalizeTimeBackend(time);
+  for (let i = 1; i < rows.length; i++) {
+    if (normalizeDate(rows[i][6]) === targetDate && normalizeTimeBackend(rows[i][7]) === targetTime) return true;
+  }
+  return false;
+}
+
+function sendNotification(type, data) {
+  // Safety check: if no email provided, don't try
+  if (!ADMIN_EMAIL) return;
+
+  const subject = `[${type}] Meeting on ${data.date} at ${data.time}`;
+  const body = `Action: ${type}\nClient: ${data.name || "Admin"}\nEmail: ${data.email || "N/A"}\nDate: ${data.date}\nTime: ${data.time}\nDetails: ${data.description || ""}`;
+  
+  // Try both MailApp and GmailApp as fallbacks
+  try {
+    MailApp.sendEmail(ADMIN_EMAIL, subject, body);
+  } catch (e) {
+    console.warn("MailApp failed, trying GmailApp...");
+    try {
+      GmailApp.sendEmail(ADMIN_EMAIL, subject, body);
+    } catch (e2) {
+      console.error("All notification methods failed:", e2.toString());
+      // we do NOT rethrow here to prevent crashing the main booking/unblock logic
+    }
+  }
+}

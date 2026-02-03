@@ -1,0 +1,229 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 5%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 5%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 5%;
+
+    --primary: 3 100% 59%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 3 100% 59%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 3 100% 59%;
+
+    --radius: 0.75rem;
+
+    /* Custom Zyero Lead tokens */
+    --zyero-red: 3 100% 59%;
+    --zyero-red-dark: 3 100% 45%;
+    --zyero-black: 0 0% 5%;
+    --zyero-white: 0 0% 100%;
+    --zyero-gray: 0 0% 96%;
+    --zyero-gray-dark: 0 0% 20%;
+
+    /* Glassmorphism */
+    --glass-bg: 0 0% 100% / 0.7;
+    --glass-border: 0 0% 100% / 0.2;
+    --glass-blur: 20px;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px -2px hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 4px 16px -4px hsl(0 0% 0% / 0.15);
+    --shadow-lg: 0 8px 32px -8px hsl(0 0% 0% / 0.2);
+    --shadow-glow: 0 0 40px hsl(var(--zyero-red) / 0.3);
+    --shadow-neumorphic: 6px 6px 12px hsl(0 0% 0% / 0.1), -6px -6px 12px hsl(0 0% 100% / 0.8);
+    --shadow-neumorphic-inset: inset 4px 4px 8px hsl(0 0% 0% / 0.1), inset -4px -4px 8px hsl(0 0% 100% / 0.8);
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--zyero-red)) 0%, hsl(var(--zyero-red-dark)) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(var(--zyero-red) / 0.05) 0%, hsl(var(--background)) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(var(--zyero-black)) 0%, hsl(0 0% 15%) 100%);
+  }
+
+  .dark {
+    --background: 0 0% 5%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 3 100% 59%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 3 100% 59%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 3 100% 59%;
+
+    --glass-bg: 0 0% 10% / 0.7;
+    --glass-border: 0 0% 100% / 0.1;
+    --shadow-neumorphic: 6px 6px 12px hsl(0 0% 0% / 0.3), -6px -6px 12px hsl(0 0% 20% / 0.2);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-bold;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    @apply text-foreground/75;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/70 backdrop-blur-xl border border-border/20 rounded-2xl;
+    box-shadow: var(--shadow-md);
+  }
+
+  .glass-card-dark {
+    @apply bg-foreground/5 backdrop-blur-xl border border-foreground/10 rounded-2xl;
+  }
+
+  .btn-neumorphic {
+    @apply relative overflow-hidden transition-all duration-300;
+    box-shadow: var(--shadow-neumorphic);
+  }
+
+  .btn-neumorphic:hover {
+    box-shadow: var(--shadow-glow), var(--shadow-neumorphic);
+    transform: translateY(-2px);
+  }
+
+  .btn-neumorphic:active {
+    box-shadow: var(--shadow-neumorphic-inset);
+    transform: translateY(0);
+  }
+
+  .section-gradient {
+    background: var(--gradient-hero);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  .animate-fade-up {
+    animation: fadeUp 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+
+  .animate-blur-in {
+    animation: blurIn 0.8s ease-out forwards;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sticky-nav {
+    @apply fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-background/80 border-b border-border/50;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes blurIn {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 30s linear infinite;
+}
