@@ -227,7 +227,7 @@ export default function Admin() {
 
     return (
         <Layout>
-            <div className="container mx-auto px-4 pt-32 pb-20">
+            <div className="container mx-auto px-8 md:px-16 lg:px-24 pt-32 pb-20">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
                     <div>
                         <h1 className="text-4xl font-black tracking-tight">Booking Dashboard</h1>

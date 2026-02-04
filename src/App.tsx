@@ -10,6 +10,7 @@ import Services from "./pages/Services";
 import CaseStudies from "./pages/CaseStudies";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
+
 import BookCalendar from "./pages/BookCalendar";
 import CalendarCall from "./pages/CalendarCall";
 import ThankYou from "./pages/ThankYou";
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/book-calendar" element={<BookCalendar />} />
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/thankyou" element={<ThankYou />} />
+
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -78,7 +78,7 @@ export default function Services() {
       {/* Hero */}
       <section className="pt-32 pb-20 relative overflow-hidden">
         <div className="absolute inset-0 section-gradient" />
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <span className="text-primary text-sm font-semibold uppercase tracking-wider">
               Our Services
@@ -97,7 +97,7 @@ export default function Services() {
 
       {/* Services Grid */}
       <section className="py-24">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <div className="grid lg:grid-cols-2 gap-8">
             {services.map((service, index) => (
               <div
@@ -131,7 +131,7 @@ export default function Services() {
 
       {/* Process */}
       <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-black mb-4">
               How We Work Together
@@ -162,7 +162,7 @@ export default function Services() {
 
       {/* CTA */}
       <section className="py-24 bg-primary">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24 text-center">
           <h2 className="text-3xl md:text-4xl font-black text-primary-foreground mb-6">
             Ready to Get Started?
           </h2>

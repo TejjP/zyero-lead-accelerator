@@ -39,7 +39,7 @@ const faqs = [
   {
     question: "What is your refund policy for unqualified leads?",
     answer:
-      "We stand behind our verification process. If a lead turns out to be fake, unreachable after 3 attempts, or clearly uninterested, we replace it at no extra cost. Simply flag the lead in your dashboard, and our team will review and credit your account.",
+      "We stand behind our verification process. If a lead turns out to be fake, unreachable after 3 attempts, or clearly uninterested, we replace it at no extra cost. Simply notify our team, and we will review and credit your account.",
   },
   {
     question: "Can I pause or cancel my subscription?",
@@ -51,7 +51,7 @@ const faqs = [
 export function FAQSection() {
   return (
     <section className="py-24">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-8 md:px-16 lg:px-24">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="text-primary text-sm font-semibold uppercase tracking-wider">
             FAQ

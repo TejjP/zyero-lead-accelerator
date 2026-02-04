@@ -13,7 +13,7 @@ export function CTASection() {
       <div className="absolute top-1/2 left-1/4 w-32 h-32 border-4 border-background/10 rounded-full" />
       <div className="absolute bottom-1/4 right-1/3 w-20 h-20 bg-background/5 rotate-45" />
 
-      <div className="container mx-auto px-4 relative z-10 text-center">
+      <div className="container mx-auto px-8 md:px-16 lg:px-24 relative z-10 text-center">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-primary-foreground mb-6 max-w-3xl mx-auto">
           Ready to Scale Your Real Estate Business?
         </h2>

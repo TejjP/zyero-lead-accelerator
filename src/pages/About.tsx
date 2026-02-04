@@ -23,7 +23,7 @@ export default function About() {
       {/* Hero */}
       <section className="pt-32 pb-20 relative overflow-hidden">
         <div className="absolute inset-0 section-gradient" />
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <span className="text-primary text-sm font-semibold uppercase tracking-wider">
               About Us
@@ -42,7 +42,7 @@ export default function About() {
 
       {/* Story */}
       <section className="py-24">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-6">
               <h2 className="text-3xl md:text-4xl font-black">
@@ -104,7 +104,7 @@ export default function About() {
 
       {/* Mission & Vision */}
       <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <div className="grid md:grid-cols-2 gap-8">
             <div className="glass-card p-10">
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
@@ -135,7 +135,7 @@ export default function About() {
 
       {/* Values */}
       <section className="py-24">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-black mb-4">Our Values</h2>
             <p className="text-foreground/60">
@@ -159,7 +159,7 @@ export default function About() {
 
       {/* Timeline */}
       <section className="py-24 bg-foreground text-background">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-black mb-4">Our Journey</h2>
             <p className="text-background/60">
@@ -197,7 +197,7 @@ export default function About() {
 
       {/* CTA */}
       <section className="py-24 bg-primary">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24 text-center">
           <h2 className="text-3xl md:text-4xl font-black text-primary-foreground mb-6">
             Ready to Join 50+ Successful Clients?
           </h2>

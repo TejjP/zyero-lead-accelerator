@@ -72,7 +72,7 @@ export default function CaseStudies() {
       {/* Hero */}
       <section className="pt-32 pb-20 relative overflow-hidden">
         <div className="absolute inset-0 section-gradient" />
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <span className="text-primary text-sm font-semibold uppercase tracking-wider">
               Case Studies
@@ -91,7 +91,7 @@ export default function CaseStudies() {
 
       {/* Stats Overview */}
       <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
             {[
               { icon: Users, metric: "50+", label: "Clients Served" },
@@ -113,7 +113,7 @@ export default function CaseStudies() {
 
       {/* Case Studies */}
       <section className="py-24">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <div className="space-y-16">
             {caseStudies.map((study, index) => (
               <div
@@ -175,7 +175,7 @@ export default function CaseStudies() {
 
       {/* CTA */}
       <section className="py-24 bg-primary">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24 text-center">
           <h2 className="text-3xl md:text-4xl font-black text-primary-foreground mb-6">
             Want Results Like These?
           </h2>

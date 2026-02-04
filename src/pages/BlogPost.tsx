@@ -123,7 +123,7 @@ export default function BlogPost() {
     return (
       <Layout>
         <section className="pt-32 pb-20">
-          <div className="container mx-auto px-4 text-center">
+          <div className="container mx-auto px-8 md:px-16 lg:px-24 text-center">
             <h1 className="text-3xl font-bold mb-4">Post Not Found</h1>
             <Button asChild variant="outline">
               <Link to="/blog">
@@ -142,7 +142,7 @@ export default function BlogPost() {
       {/* Hero */}
       <section className="pt-32 pb-12 relative overflow-hidden">
         <div className="absolute inset-0 section-gradient" />
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24 relative z-10">
           <div className="max-w-3xl mx-auto">
             <Link
               to="/blog"
@@ -180,7 +180,7 @@ export default function BlogPost() {
 
       {/* Content */}
       <section className="py-12">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <article className="max-w-3xl mx-auto prose prose-lg">
             {post.content.map((paragraph, index) => {
               if (paragraph.startsWith("## ")) {

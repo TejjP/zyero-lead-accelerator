@@ -55,7 +55,7 @@ export default function Blog() {
       {/* Hero */}
       <section className="pt-32 pb-20 relative overflow-hidden">
         <div className="absolute inset-0 section-gradient" />
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <span className="text-primary text-sm font-semibold uppercase tracking-wider">
               Blog
@@ -74,7 +74,7 @@ export default function Blog() {
 
       {/* Blog Grid */}
       <section className="py-24">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {blogPosts.map((post, index) => (
               <Link
@@ -131,7 +131,7 @@ export default function Blog() {
 
       {/* Newsletter CTA */}
       <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-black mb-4">
               Stay Updated

@@ -95,7 +95,7 @@ export default function Contact() {
       {/* Hero */}
       <section className="pt-32 pb-20 relative overflow-hidden">
         <div className="absolute inset-0 section-gradient" />
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <span className="text-primary text-sm font-semibold uppercase tracking-wider">
               Contact Us
@@ -114,7 +114,7 @@ export default function Contact() {
 
       {/* Contact Section */}
       <section className="py-24">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
           <div className="grid lg:grid-cols-2 gap-16 max-w-6xl mx-auto">
             {/* Contact Info */}
             <div className="space-y-8">
