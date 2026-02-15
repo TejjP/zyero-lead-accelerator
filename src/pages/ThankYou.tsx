@@ -2,10 +2,18 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Calendar, Clock, MessageSquare, Mail, ShieldCheck, Zap, Target } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
+
 
 const ThankYou = () => {
     const location = useLocation();
     const { date, time } = location.state || {};
+
+    useEffect(() => {
+        if (window.fbq) {
+            window.fbq('track', 'Lead');
+        }
+    }, []);
 
     const coveragePoints = [
         {
