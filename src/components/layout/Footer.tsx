@@ -121,10 +121,10 @@ export function Footer() {
             © {new Date().getFullYear()} Zyero Lead. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <Link to="/privacy" className="text-background/40 hover:text-background/60 text-sm transition-colors">
+            <Link to="/privacy-policy" className="text-background/40 hover:text-background/60 text-sm transition-colors">
               Privacy Policy
             </Link>
-            <Link to="/terms" className="text-background/40 hover:text-background/60 text-sm transition-colors">
+            <Link to="/terms-of-service" className="text-background/40 hover:text-background/60 text-sm transition-colors">
               Terms of Service
             </Link>
           </div>

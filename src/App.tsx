@@ -14,6 +14,8 @@ import Admin from "./pages/Admin";
 import BookCalendar from "./pages/BookCalendar";
 import CalendarCall from "./pages/CalendarCall";
 import ThankYou from "./pages/ThankYou";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +40,8 @@ const App = () => (
           <Route path="/thankyou" element={<ThankYou />} />
 
           <Route path="/admin" element={<Admin />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
