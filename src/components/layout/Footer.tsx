@@ -4,6 +4,7 @@ import { Mail, Phone, MapPin, Linkedin, X, Instagram, Facebook } from "lucide-re
 const quickLinks = [
   { name: "About Us", href: "/about" },
   { name: "Services", href: "/services" },
+  { name: "Pricing", href: "/pricing" },
   { name: "Case Studies", href: "/case-studies" },
   { name: "Contact", href: "/contact" },
   { name: "Book Strategy Call", href: "/calendar-call" },
