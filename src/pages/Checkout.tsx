@@ -15,20 +15,16 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const paymentMethods = [
-    { id: "card", name: "Credit / Debit Card", icon: CreditCard },
-    { id: "upi", name: "UPI / QR Code", icon: Wallet },
-    { id: "netbanking", name: "Net Banking", icon: Landmark },
-];
+
 
 export default function Checkout() {
     const [searchParams] = useSearchParams();
     const plan = searchParams.get("plan") || "growth";
-    const [selectedMethod, setSelectedMethod] = useState("card");
+    // const [selectedMethod, setSelectedMethod] = useState("card"); // Removed redundant state
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const price = plan === "starter" ? "₹49,999" : plan === "growth" ? "₹99,999" : "Custom";
+    const price = plan === "starter" ? "₹49,999" : plan === "growth" ? "₹80,000" : "Custom";
 
     // Auto-scroll to top
     useEffect(() => {
@@ -39,12 +35,54 @@ export default function Checkout() {
         e.preventDefault();
         setIsSubmitting(true);
 
-        // Simulate Payment Gateway call
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        const formData = new FormData(e.target as HTMLFormElement);
+        const name = formData.get("name") as string;
+        const email = formData.get("email") as string;
+        const phone = formData.get("phone") as string;
 
-        setIsSubmitting(false);
-        setIsSuccess(true);
-        toast.success("Payment Successful! Welcome to Zyero.");
+        let amount = 0;
+        if (plan === "starter") amount = 4999900;
+        else if (plan === "growth") amount = 8000000; // 5 INR = 500 paise
+        else {
+            toast.error("Please contact support for custom plans");
+            setIsSubmitting(false);
+            return;
+        }
+
+        const options = {
+            key: "rzp_live_SHCHdFk3rpAOhi", // Enter the Key ID generated from the Dashboard
+            amount: amount,
+            currency: "INR",
+            name: "Zyero Lead",
+            description: `${plan} Plan Subscription`,
+            image: "https://zyerolead.com/logo.png",
+            handler: function (response: any) {
+                console.log("Payment Success:", response);
+                setIsSubmitting(false);
+                setIsSuccess(true);
+                toast.success("Payment Successful! Welcome to Zyero.");
+            },
+            prefill: {
+                name: name,
+                email: email,
+                contact: phone
+            },
+            theme: {
+                color: "#FF3B30"
+            },
+            modal: {
+                ondismiss: () => {
+                    setIsSubmitting(false);
+                }
+            }
+        };
+
+        const rzp1 = new window.Razorpay(options);
+        rzp1.on('payment.failed', function (response: any) {
+            toast.error(response.error.description);
+            setIsSubmitting(false);
+        });
+        rzp1.open();
     };
 
     if (isSuccess) {
@@ -100,17 +138,17 @@ export default function Checkout() {
                                     <div className="grid md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
                                             <label className="text-sm font-semibold">Full Name</label>
-                                            <Input required placeholder="John Doe" className="bg-muted/50 border-none px-4 py-6 rounded-xl" />
+                                            <Input required name="name" placeholder="John Doe" className="bg-muted/50 border-none px-4 py-6 rounded-xl" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-semibold">Business Email</label>
-                                            <Input required type="email" placeholder="john@example.com" className="bg-muted/50 border-none px-4 py-6 rounded-xl" />
+                                            <Input required name="email" type="email" placeholder="john@example.com" className="bg-muted/50 border-none px-4 py-6 rounded-xl" />
                                         </div>
                                     </div>
                                     <div className="grid md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
                                             <label className="text-sm font-semibold">Phone Number</label>
-                                            <Input required type="tel" placeholder="+91 XXX XXX XXXX" className="bg-muted/50 border-none px-4 py-6 rounded-xl" />
+                                            <Input required name="phone" type="tel" placeholder="+91 XXX XXX XXXX" className="bg-muted/50 border-none px-4 py-6 rounded-xl" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-semibold">Company Name</label>
@@ -123,69 +161,18 @@ export default function Checkout() {
                                     </div>
                                 </div>
 
-                                {/* Step 2: Payment Method */}
-                                <div className="glass-card p-8 space-y-6">
-                                    <h3 className="text-xl font-bold flex items-center gap-2">
-                                        <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">2</span>
-                                        Payment Method
-                                    </h3>
-                                    <div className="grid sm:grid-cols-3 gap-4">
-                                        {paymentMethods.map((method) => (
-                                            <button
-                                                key={method.id}
-                                                type="button"
-                                                onClick={() => setSelectedMethod(method.id)}
-                                                className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all duration-300 ${selectedMethod === method.id
-                                                        ? "bg-foreground text-background border-primary shadow-lg"
-                                                        : "bg-background border-border hover:border-primary/50"
-                                                    }`}
-                                            >
-                                                <method.icon className={`w-5 h-5 ${selectedMethod === method.id ? "text-primary" : "text-foreground/40"}`} />
-                                                <span className="text-sm font-bold">{method.name}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {/* Payment Inputs */}
-                                    <div className="pt-4">
-                                        {selectedMethod === "card" && (
-                                            <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-semibold italic">Card Number</label>
-                                                    <Input required placeholder="XXXX XXXX XXXX XXXX" className="bg-muted/50 border-none px-4 py-6 rounded-xl" />
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-sm font-semibold italic">Expiry Date</label>
-                                                        <Input required placeholder="MM/YY" className="bg-muted/50 border-none px-4 py-6 rounded-xl" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-sm font-semibold italic">CVV</label>
-                                                        <Input required type="password" placeholder="***" className="bg-muted/50 border-none px-4 py-6 rounded-xl" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {selectedMethod === "upi" && (
-                                            <div className="space-y-4">
-                                                <label className="text-sm font-semibold italic">UPI ID</label>
-                                                <Input required placeholder="yourname@upi" className="bg-muted/50 border-none px-4 py-6 rounded-xl" />
-                                                <p className="text-xs text-foreground/40 text-center">A payment request will be sent to your UPI app</p>
-                                            </div>
-                                        )}
-
-                                        {selectedMethod === "netbanking" && (
-                                            <div className="space-y-4">
-                                                <label className="text-sm font-semibold italic">Select Your Bank</label>
-                                                <select className="w-full bg-muted/50 border-none px-4 py-4 rounded-xl text-foreground appearance-none outline-none">
-                                                    <option>HDFC Bank</option>
-                                                    <option>ICICI Bank</option>
-                                                    <option>SBI</option>
-                                                    <option>Axis Bank</option>
-                                                </select>
-                                            </div>
-                                        )}
+                                {/* Step 2: Payment Method - Handled by Razorpay Modal */}
+                                <div className="glass-card p-8 space-y-4">
+                                    <div className="flex items-start gap-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                                        <div className="p-2 bg-background rounded-full shadow-sm">
+                                            <ShieldCheck className="w-6 h-6 text-green-500" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-lg mb-1">Secure Payment via Razorpay</h4>
+                                            <p className="text-sm text-foreground/60">
+                                                Clicking "Pay Now" will open a secure popup where you can choose Credit/Debit Card, UPI, Netbanking, or Wallet.
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -195,15 +182,15 @@ export default function Checkout() {
                                         {isSubmitting ? (
                                             <>
                                                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                                Authorizing Transaction...
+                                                Processing...
                                             </>
                                         ) : (
-                                            `Buy ${price} - Secure Checkout`
+                                            `Pay ${price} Now`
                                         )}
                                     </Button>
                                     <div className="flex items-center justify-center gap-2 text-xs text-foreground/40">
                                         <ShieldCheck className="w-4 h-4 text-green-500" />
-                                        256-bit SSL Encrypted Secure Transaction
+                                        Secured by Razorpay
                                     </div>
                                 </div>
                             </form>

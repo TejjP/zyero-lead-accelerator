@@ -2,4 +2,5 @@
 
 interface Window {
     fbq: (type: string, name: string, options?: any) => void;
+    Razorpay: any;
 }

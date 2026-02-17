@@ -20,7 +20,7 @@ const pricingTiers = [
     },
     {
         name: "Growth",
-        price: "₹99,999",
+        price: "₹5",
         description: "Ideal for growing developers and teams looking to scale predictably.",
         features: [
             "Verified Buyer Leads (Upto 150)",
@@ -79,8 +79,8 @@ export default function Pricing() {
                             <div
                                 key={tier.name}
                                 className={`flex flex-col p-8 rounded-3xl transition-all duration-300 ${tier.popular
-                                        ? "bg-foreground text-background scale-105 shadow-2xl relative z-10 border-2 border-primary"
-                                        : "glass-card hover:border-primary/50"
+                                    ? "bg-foreground text-background scale-105 shadow-2xl relative z-10 border-2 border-primary"
+                                    : "glass-card hover:border-primary/50"
                                     }`}
                             >
                                 {tier.popular && (
