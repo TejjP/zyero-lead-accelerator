@@ -127,6 +127,9 @@ export function Footer() {
             <Link to="/terms-of-service" className="text-background/40 hover:text-background/60 text-sm transition-colors">
               Terms of Service
             </Link>
+            <Link to="/refund-policy" className="text-background/40 hover:text-background/60 text-sm transition-colors">
+              Refund Policy
+            </Link>
           </div>
         </div>
       </div>
