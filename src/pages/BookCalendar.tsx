@@ -84,42 +84,90 @@ export default function BookCalendar() {
     const [bookedSlots, setBookedSlots] = useState<string[]>([]);
     const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
+    // Cache to store slots per date to make switching instant
+    // Using a ref to persist across renders without triggering re-renders itself
+    const slotsCache = useRef<Record<string, { slots: string[], timestamp: number }>>({});
     const sessionBookedSlots = useRef<Record<string, string[]>>({});
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxfoanV0ZAhs8esVGtci22cMRlCuY2DvYiVrPg7DbV14lnyhXs8pIed3DYEkCY_U15hNw/exec";
 
+    const fetchBookingsForDate = async (dateObj: Date, isBackground = false) => {
+        const dateStr = format(dateObj, "yyyy-MM-dd");
+
+        // If not a background fetch, we might want to show a loader if no cache exists
+        if (!isBackground && !slotsCache.current[dateStr]) {
+            setIsLoadingSlots(true);
+        }
+
+        try {
+            const response = await fetch(`${GOOGLE_SCRIPT_URL}?date=${dateStr}&_=${Date.now()}`);
+            if (!response.ok) throw new Error("Network error while checking slots");
+            const data = await response.json();
+
+            if (data.bookedTimes && Array.isArray(data.bookedTimes)) {
+                // Update cache
+                slotsCache.current[dateStr] = {
+                    slots: data.bookedTimes,
+                    timestamp: Date.now()
+                };
+
+                // If this is the currently selected date, update the UI
+                if (date && format(date, "yyyy-MM-dd") === dateStr) {
+                    const localForDate = sessionBookedSlots.current[dateStr] || [];
+                    const combined = Array.from(new Set([...localForDate, ...data.bookedTimes]));
+                    setBookedSlots(combined);
+                }
+            }
+        } catch (error) {
+            console.error(`Failed to fetch slots for ${dateStr}`, error);
+            if (!isBackground) {
+                toast({
+                    title: "Availability Sync Error",
+                    description: "Could not fetch current availability. Please refresh.",
+                    variant: "destructive"
+                });
+            }
+        } finally {
+            if (!isBackground) {
+                setIsLoadingSlots(false);
+            }
+        }
+    };
+
     useEffect(() => {
         if (date) {
-            const fetchBookings = async () => {
-                setIsLoadingSlots(true);
-                setBookedSlots([]);
+            const dateStr = format(date, "yyyy-MM-dd");
+            const cached = slotsCache.current[dateStr];
 
-                const dateStr = format(date, "yyyy-MM-dd");
+            // 1. If cached, show immediately
+            if (cached) {
                 const localForDate = sessionBookedSlots.current[dateStr] || [];
-                setBookedSlots([...localForDate]);
+                setBookedSlots(Array.from(new Set([...localForDate, ...cached.slots])));
+                setIsLoadingSlots(false);
 
-                try {
-                    const response = await fetch(`${GOOGLE_SCRIPT_URL}?date=${dateStr}&_=${Date.now()}`);
-                    if (!response.ok) throw new Error("Network error while checking slots");
-                    const data = await response.json();
-
-                    if (data.bookedTimes && Array.isArray(data.bookedTimes)) {
-                        const localForDate = sessionBookedSlots.current[dateStr] || [];
-                        const combined = Array.from(new Set([...localForDate, ...data.bookedTimes]));
-                        setBookedSlots(combined);
-                    }
-                } catch (error) {
-                    console.error("Failed to fetch slots", error);
-                    toast({
-                        title: "Availability Sync Error",
-                        description: "Could not fetch current availability. Please refresh.",
-                        variant: "destructive"
-                    });
-                } finally {
-                    setIsLoadingSlots(false);
+                // Refresh in background if cache is older than 1 minute
+                if (Date.now() - cached.timestamp > 60000) {
+                    fetchBookingsForDate(date, true);
                 }
-            };
-            fetchBookings();
+            } else {
+                // 2. Otherwise fetch with loader
+                fetchBookingsForDate(date);
+            }
+
+            // 3. Prefetch next 3 days to make future selections instant
+            const today = new Date();
+            for (let i = 1; i <= 3; i++) {
+                const nextDate = new Date(date);
+                nextDate.setDate(date.getDate() + i);
+
+                // Don't prefetch past dates or Sundays
+                if (nextDate >= today && nextDate.getDay() !== 0) {
+                    const nextDateStr = format(nextDate, "yyyy-MM-dd");
+                    if (!slotsCache.current[nextDateStr]) {
+                        fetchBookingsForDate(nextDate, true);
+                    }
+                }
+            }
         }
     }, [date]);
 
@@ -162,8 +210,15 @@ export default function BookCalendar() {
                 const dateStr = format(date, "yyyy-MM-dd");
                 const current = sessionBookedSlots.current[dateStr] || [];
                 sessionBookedSlots.current[dateStr] = [...current, selectedTime];
+
+                // Also update cache so it reflects the new booking
+                if (slotsCache.current[dateStr]) {
+                    slotsCache.current[dateStr].slots = [...slotsCache.current[dateStr].slots, selectedTime];
+                }
+
                 setBookedSlots(prev => [...prev, selectedTime]);
             }
+
 
             toast({
                 title: "Booking Confirmed!",
