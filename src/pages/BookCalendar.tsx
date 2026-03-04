@@ -103,16 +103,23 @@ export default function BookCalendar() {
     // Using a ref to persist across renders without triggering re-renders itself
     const slotsCache = useRef<Record<string, { slots: string[], timestamp: number }>>({});
     const sessionBookedSlots = useRef<Record<string, string[]>>({});
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxfoanV0ZAhs8esVGtci22cMRlCuY2DvYiVrPg7DbV14lnyhXs8pIed3DYEkCY_U15hNw/exec";
 
     const fetchBookingsForDate = async (dateObj: Date, isBackground = false) => {
         const dateStr = format(dateObj, "yyyy-MM-dd");
 
-        // If not a background fetch, we don't show a loader anymore for instant perception
+        // Cancel previous request if it's still running
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
 
         try {
-            const response = await fetch(`${GOOGLE_SCRIPT_URL}?date=${dateStr}&_=${Date.now()}`);
+            const response = await fetch(`${GOOGLE_SCRIPT_URL}?date=${dateStr}&_=${Date.now()}`, {
+                signal: abortControllerRef.current.signal
+            });
             if (!response.ok) throw new Error("Network error while checking slots");
             const data = await response.json();
 
@@ -129,8 +136,12 @@ export default function BookCalendar() {
                     const combined = Array.from(new Set([...localForDate, ...data.bookedTimes]));
                     setBookedSlots(combined);
                 }
+                return data.bookedTimes;
             }
         } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                return null; // Ignore aborted requests
+            }
             console.error(`Failed to fetch slots for ${dateStr}`, error);
             if (!isBackground) {
                 toast({
@@ -140,39 +151,43 @@ export default function BookCalendar() {
                 });
             }
         } finally {
-            // Loading state removed for better instant feel
+            // Clean up if this was the current controller
+            if (abortControllerRef.current?.signal.aborted === false) {
+                abortControllerRef.current = null;
+            }
         }
+        return null;
     };
 
     useEffect(() => {
+        let timeoutId: NodeJS.Timeout;
+
+        const poll = async () => {
+            if (date) {
+                await fetchBookingsForDate(date, true);
+                timeoutId = setTimeout(poll, 1000); // Recursive polling
+            }
+        };
+
         if (date) {
             const dateStr = format(date, "yyyy-MM-dd");
             const cached = slotsCache.current[dateStr];
 
-            // 1. If cached, show immediately
             if (cached) {
                 const localForDate = sessionBookedSlots.current[dateStr] || [];
                 setBookedSlots(Array.from(new Set([...localForDate, ...cached.slots])));
-
-                // Always refresh in background immediately (instant sync)
                 fetchBookingsForDate(date, true);
             } else {
-                // 2. Otherwise fetch with loader
                 fetchBookingsForDate(date);
             }
 
-            // 3. Polling interval for instant "live" updates every 1 second
-            const interval = setInterval(() => {
-                fetchBookingsForDate(date, true);
-            }, 1000);
+            poll(); // Start polling
 
-            // 4. Prefetch next 3 days to make future selections instant
+            // Prefetch next 3 days
             const today = new Date();
             for (let i = 1; i <= 3; i++) {
                 const nextDate = new Date(date);
                 nextDate.setDate(date.getDate() + i);
-
-                // Don't prefetch past dates or Sundays
                 if (nextDate >= today && nextDate.getDay() !== 0) {
                     const nextDateStr = format(nextDate, "yyyy-MM-dd");
                     if (!slotsCache.current[nextDateStr]) {
@@ -180,18 +195,41 @@ export default function BookCalendar() {
                     }
                 }
             }
-
-            return () => clearInterval(interval);
         }
+
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            if (abortControllerRef.current) abortControllerRef.current.abort();
+        };
     }, [date]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Start processing but don't wait for it to finish for the UI response
         setIsSubmitting(true);
 
         try {
+            // THE "DOUBLE-CHECK": One final ultra-fast check before submmitting
+            if (date && selectedTime) {
+                const latestBookedAtServer = await fetchBookingsForDate(date, true);
+                const normalizeTime = (t: string) => t.trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, '');
+
+                if (latestBookedAtServer) {
+                    const isTakenNow = latestBookedAtServer.some(s => normalizeTime(s) === normalizeTime(selectedTime));
+                    if (isTakenNow) {
+                        setIsSubmitting(false);
+                        setIsDialogOpen(false);
+                        setSelectedTime(null);
+                        toast({
+                            title: "Slot Recently Taken",
+                            description: "Sorry, someone else just booked this slot. Please choose another time.",
+                            variant: "destructive",
+                        });
+                        return;
+                    }
+                }
+            }
+
             const fullDetails = `Deals: ${formData.dealsClosed} | Sourcing: ${formData.clientSourcing} | Market: ${formData.targetMarket} | Role: ${formData.role}`;
             const enhancedCompany = formData.company ? `${formData.company} | ${fullDetails}` : fullDetails;
 
@@ -216,7 +254,7 @@ export default function BookCalendar() {
                 console.error("Background booking catch error:", error);
             });
 
-            // Update local state immediately for instant feedback if they were to stay on page
+            // Update local state immediately for instant feedback
             if (date && selectedTime) {
                 const dateStr = format(date, "yyyy-MM-dd");
                 const current = sessionBookedSlots.current[dateStr] || [];
