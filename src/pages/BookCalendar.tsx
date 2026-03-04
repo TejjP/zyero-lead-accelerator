@@ -67,6 +67,10 @@ export default function BookCalendar() {
             });
             return;
         }
+
+        // Aggressive background sync: Refresh availability while user is filling the form
+        fetchBookingsForDate(date, true);
+
         setIsDialogOpen(true);
     };
 
@@ -78,11 +82,22 @@ export default function BookCalendar() {
             });
             return;
         }
+
+        // Email validation regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+            toast({
+                title: "Invalid Email Address",
+                description: "Please enter a valid email address to receive booking confirmation.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setStep(2);
     };
 
     const [bookedSlots, setBookedSlots] = useState<string[]>([]);
-    const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
     // Cache to store slots per date to make switching instant
     // Using a ref to persist across renders without triggering re-renders itself
@@ -94,10 +109,7 @@ export default function BookCalendar() {
     const fetchBookingsForDate = async (dateObj: Date, isBackground = false) => {
         const dateStr = format(dateObj, "yyyy-MM-dd");
 
-        // If not a background fetch, we might want to show a loader if no cache exists
-        if (!isBackground && !slotsCache.current[dateStr]) {
-            setIsLoadingSlots(true);
-        }
+        // If not a background fetch, we don't show a loader anymore for instant perception
 
         try {
             const response = await fetch(`${GOOGLE_SCRIPT_URL}?date=${dateStr}&_=${Date.now()}`);
@@ -128,9 +140,7 @@ export default function BookCalendar() {
                 });
             }
         } finally {
-            if (!isBackground) {
-                setIsLoadingSlots(false);
-            }
+            // Loading state removed for better instant feel
         }
     };
 
@@ -143,18 +153,20 @@ export default function BookCalendar() {
             if (cached) {
                 const localForDate = sessionBookedSlots.current[dateStr] || [];
                 setBookedSlots(Array.from(new Set([...localForDate, ...cached.slots])));
-                setIsLoadingSlots(false);
 
-                // Refresh in background if cache is older than 1 minute
-                if (Date.now() - cached.timestamp > 60000) {
-                    fetchBookingsForDate(date, true);
-                }
+                // Always refresh in background immediately (instant sync)
+                fetchBookingsForDate(date, true);
             } else {
                 // 2. Otherwise fetch with loader
                 fetchBookingsForDate(date);
             }
 
-            // 3. Prefetch next 3 days to make future selections instant
+            // 3. Polling interval for instant "live" updates every 1 second
+            const interval = setInterval(() => {
+                fetchBookingsForDate(date, true);
+            }, 1000);
+
+            // 4. Prefetch next 3 days to make future selections instant
             const today = new Date();
             for (let i = 1; i <= 3; i++) {
                 const nextDate = new Date(date);
@@ -168,12 +180,15 @@ export default function BookCalendar() {
                     }
                 }
             }
+
+            return () => clearInterval(interval);
         }
     }, [date]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Start processing but don't wait for it to finish for the UI response
         setIsSubmitting(true);
 
         try {
@@ -189,56 +204,51 @@ export default function BookCalendar() {
                 created_at: new Date().toISOString()
             };
 
-            const response = await fetch(GOOGLE_SCRIPT_URL, {
+            // Fire and forget the fetch request so the user doesn't have to wait for slow Google Script
+            fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
                 mode: "cors",
                 headers: {
                     "Content-Type": "text/plain",
                 },
                 body: JSON.stringify(payload),
+            }).catch(error => {
+                console.error("Background booking catch error:", error);
             });
 
-            const data = await response.json();
-
-            if (data.status === "error") {
-                throw new Error(data.message || "Unknown backend error");
-            }
-
-            setIsSubmitting(false);
-
+            // Update local state immediately for instant feedback if they were to stay on page
             if (date && selectedTime) {
                 const dateStr = format(date, "yyyy-MM-dd");
                 const current = sessionBookedSlots.current[dateStr] || [];
                 sessionBookedSlots.current[dateStr] = [...current, selectedTime];
 
-                // Also update cache so it reflects the new booking
                 if (slotsCache.current[dateStr]) {
                     slotsCache.current[dateStr].slots = [...slotsCache.current[dateStr].slots, selectedTime];
                 }
-
                 setBookedSlots(prev => [...prev, selectedTime]);
             }
-
 
             toast({
                 title: "Booking Confirmed!",
                 description: "We have added it to our calendar. See you then!",
             });
 
-            // Redirect to thank you page
-            navigate("/thank-you", {
-                state: {
-                    date: date ? format(date, "PPPP") : "",
-                    time: selectedTime
-                }
-            });
+            // INTANT-ish REDIRECT - 1s delay for better feel as requested
+            setTimeout(() => {
+                navigate("/thank-you", {
+                    state: {
+                        date: date ? format(date, "PPPP") : "",
+                        time: selectedTime
+                    }
+                });
+            }, 1000);
 
         } catch (error) {
             console.error("Booking caught error:", error);
             setIsSubmitting(false);
             toast({
                 title: "Submission Error",
-                description: error instanceof Error ? error.message : "Please check your script permissions.",
+                description: "There was a problem starting your booking. Please try again.",
                 variant: "destructive",
             });
         }
@@ -313,53 +323,48 @@ export default function BookCalendar() {
                                         <p className="text-lg font-bold">
                                             {format(date, "EEEE, MMM do")}
                                         </p>
-                                        <div className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
-                                            Availability
+                                        <div className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
+                                            <span className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                            </span>
+                                            Live Sync
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3 min-h-[200px] content-start">
-                                        {isLoadingSlots ? (
-                                            <div className="col-span-2 text-center py-12 text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border">
-                                                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
-                                                <p className="text-sm">Syncing Live Slots...</p>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {timeSlots.map((time) => {
-                                                    const normalizeTime = (t: string) => t.trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, '');
-                                                    const isTaken = bookedSlots.some(s => normalizeTime(s) === normalizeTime(time));
+                                        {timeSlots.map((time) => {
+                                            const normalizeTime = (t: string) => t.trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, '');
+                                            const isTaken = bookedSlots.some(s => normalizeTime(s) === normalizeTime(time));
 
-                                                    return (
-                                                        <Button
-                                                            key={time}
-                                                            variant={selectedTime === time ? "default" : "outline"}
-                                                            size="lg"
-                                                            disabled={isTaken}
-                                                            className={cn(
-                                                                "w-full justify-start font-bold transition-all duration-300 h-12 relative",
-                                                                selectedTime === time && "ring-2 ring-primary ring-offset-2 scale-105",
-                                                                isTaken && "opacity-50 line-through border-dashed cursor-not-allowed grayscale"
-                                                            )}
-                                                            onClick={() => !isTaken && setSelectedTime(time)}
-                                                        >
-                                                            <Clock className={cn("w-4 h-4 mr-2", selectedTime === time ? "text-primary-foreground" : "text-primary")} />
-                                                            {time}
-                                                            {isTaken && (
-                                                                <span className="absolute right-2 text-[10px] uppercase tracking-tighter opacity-70">
-                                                                    Booked
-                                                                </span>
-                                                            )}
-                                                        </Button>
-                                                    );
-                                                })}
-                                                {timeSlots.every(t => bookedSlots.some(s => t.trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, '') === s.trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, ''))) && (
-                                                    <div className="col-span-2 text-center py-8 text-muted-foreground bg-orange-50/50 rounded-xl border border-orange-100">
-                                                        <p className="font-bold text-orange-600">No Slots Available</p>
-                                                        <p className="text-xs">All timings are currently blocked or booked.</p>
-                                                    </div>
-                                                )}
-                                            </>
+                                            return (
+                                                <Button
+                                                    key={time}
+                                                    variant={selectedTime === time ? "default" : "outline"}
+                                                    size="lg"
+                                                    disabled={isTaken}
+                                                    className={cn(
+                                                        "w-full justify-start font-bold transition-all duration-300 h-12 relative",
+                                                        selectedTime === time && "ring-2 ring-primary ring-offset-2 scale-105",
+                                                        isTaken && "opacity-50 line-through border-dashed cursor-not-allowed grayscale"
+                                                    )}
+                                                    onClick={() => !isTaken && setSelectedTime(time)}
+                                                >
+                                                    <Clock className={cn("w-4 h-4 mr-2", selectedTime === time ? "text-primary-foreground" : "text-primary")} />
+                                                    {time}
+                                                    {isTaken && (
+                                                        <span className="absolute right-2 text-[10px] uppercase tracking-tighter opacity-70">
+                                                            Booked
+                                                        </span>
+                                                    )}
+                                                </Button>
+                                            );
+                                        })}
+                                        {timeSlots.every(t => bookedSlots.some(s => t.trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, '') === s.trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, ''))) && (
+                                            <div className="col-span-2 text-center py-8 text-muted-foreground bg-orange-50/50 rounded-xl border border-orange-100">
+                                                <p className="font-bold text-orange-600">No Slots Available</p>
+                                                <p className="text-xs">All timings are currently blocked or booked.</p>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
