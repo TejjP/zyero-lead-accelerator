@@ -81,7 +81,7 @@ export default function Admin() {
 
     // SECURITY: Matches the token in the Google Apps Script
     const ADMIN_TOKEN = "zyero_admin_2025_safe";
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxfoanV0ZAhs8esVGtci22cMRlCuY2DvYiVrPg7DbV14lnyhXs8pIed3DYEkCY_U15hNw/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtt-D4t0zSyqk06-xnr7MUVOOVtQ6M_o15_a14n4VvgRqzD8jJl5u8l3ciVmH9pt6VCg/exec";
 
     const fetchBookings = async () => {
         setIsLoading(true);
@@ -192,9 +192,21 @@ export default function Admin() {
             newDate: format(newDate, "yyyy-MM-dd"),
             newTime: newTime,
             name: rescheduleData.name,
-            email: rescheduleData.email
+            email: rescheduleData.email,
+            phone: rescheduleData.phone,
+            company: rescheduleData.company,
+            description: rescheduleData.details
         });
         setRescheduleData(null);
+    };
+
+    const handleTestEmail = () => {
+        performAction("testEmail", {
+            email: "test@example.com",
+            name: "Test User",
+            date: format(new Date(), "yyyy-MM-dd"),
+            time: "10:00 AM"
+        });
     };
 
     if (!isAuthenticated) {
@@ -233,10 +245,16 @@ export default function Admin() {
                         <h1 className="text-4xl font-black tracking-tight">Booking Dashboard</h1>
                         <p className="text-muted-foreground">Control appointments and availability.</p>
                     </div>
-                    <Button onClick={fetchBookings} variant="outline" className="h-12 rounded-xl" disabled={isLoading}>
-                        <RefreshCw className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")} />
-                        Refresh
-                    </Button>
+                    <div className="flex gap-3">
+                        <Button onClick={handleTestEmail} variant="outline" className="h-12 rounded-xl text-primary" disabled={isLoading || !!isActionInProgress}>
+                            <Mail className={cn("w-4 h-4 mr-2", isActionInProgress?.includes("testEmail") && "animate-pulse")} />
+                            Test Email
+                        </Button>
+                        <Button onClick={fetchBookings} variant="outline" className="h-12 rounded-xl" disabled={isLoading}>
+                            <RefreshCw className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")} />
+                            Refresh
+                        </Button>
+                    </div>
                 </div>
 
                 <Tabs defaultValue="bookings" className="space-y-6">
@@ -300,7 +318,7 @@ export default function Admin() {
                                                     )}
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground text-sm">
-                                                    {booking.company || "-"}
+                                                    {booking.company || "Direct Customer"}
                                                 </TableCell>
                                                 <TableCell className="text-right pr-6">
                                                     <div className="flex justify-end gap-2">

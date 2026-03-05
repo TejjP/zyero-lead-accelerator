@@ -87,7 +87,7 @@ export default function CalendarCall() {
 
     const sessionBookedSlots = useRef<Record<string, string[]>>({});
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxfoanV0ZAhs8esVGtci22cMRlCuY2DvYiVrPg7DbV14lnyhXs8pIed3DYEkCY_U15hNw/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtt-D4t0zSyqk06-xnr7MUVOOVtQ6M_o15_a14n4VvgRqzD8jJl5u8l3ciVmH9pt6VCg/exec";
 
     useEffect(() => {
         if (date) {

@@ -35,6 +35,9 @@ function doPost(e) {
         return handleUnblock(sheet, data);
       case "reschedule":
         return handleReschedule(sheet, data);
+      case "testEmail":
+        sendNotification("TEST CONNECTION", data);
+        return jsonResponse({ status: "success", message: "Test email sent to " + ADMIN_EMAIL });
       default:
         return handleBooking(sheet, data);
     }
@@ -306,7 +309,7 @@ function sendNotification(type, data) {
   if (!ADMIN_EMAIL) return;
 
   const subject = `[${type}] Meeting on ${data.date} at ${data.time}`;
-  const body = `Action: ${type}\nClient: ${data.name || "Admin"}\nEmail: ${data.email || "N/A"}\nDate: ${data.date}\nTime: ${data.time}\nDetails: ${data.description || ""}`;
+  const body = `Action: ${type}\nClient: ${data.name || "Admin"}\nEmail: ${data.email || "N/A"}\nPhone: ${data.phone || "N/A"}\nDate: ${data.date}\nTime: ${data.time}\nDetails: ${data.description || ""}`;
   
   // Try both MailApp and GmailApp as fallbacks
   try {
