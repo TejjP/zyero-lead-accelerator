@@ -42,6 +42,11 @@ export default function BookCalendar() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [step, setStep] = useState(1);
     const { toast } = useToast();
+    const bookingSectionRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBooking = () => {
+        bookingSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
     const [formData, setFormData] = useState({
         name: "",
@@ -56,6 +61,14 @@ export default function BookCalendar() {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+
+        if (name === "phone") {
+            // Only allow digits and max 10 characters
+            const cleaned = value.replace(/\D/g, "").slice(0, 10);
+            setFormData((prev) => ({ ...prev, [name]: cleaned }));
+            return;
+        }
+
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
@@ -78,6 +91,15 @@ export default function BookCalendar() {
         if (!formData.name || !formData.phone || !formData.email) {
             toast({
                 title: "Please fill in all required fields",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        if (formData.phone.length !== 10) {
+            toast({
+                title: "Invalid Phone Number",
+                description: "Please enter a valid 10-digit mobile number.",
                 variant: "destructive",
             });
             return;
@@ -235,6 +257,7 @@ export default function BookCalendar() {
 
             const payload = {
                 ...formData,
+                phone: `+91${formData.phone}`,
                 company: enhancedCompany,
                 description: fullDetails,
                 date: date ? format(date, "yyyy-MM-dd") : "",
@@ -334,13 +357,65 @@ export default function BookCalendar() {
                     </div>
 
                     <div className="pt-4">
-                        <div className="inline-block bg-primary/10 text-primary px-8 py-3 rounded-full font-black text-xl md:text-2xl border border-primary/20 shadow-sm">
+                        <button
+                            onClick={scrollToBooking}
+                            className="inline-block bg-primary/10 text-primary px-8 py-3 rounded-full font-black text-xl md:text-2xl border border-primary/20 shadow-sm hover:bg-primary/20 transition-all cursor-pointer"
+                        >
                             Book Your Free Strategy Call
-                        </div>
+                        </button>
                     </div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-12 justify-center items-stretch">
+                {/* How It Works Section */}
+                <div className="mb-16">
+                    <div className="text-center mb-10">
+                        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90">
+                            How It Works
+                        </h2>
+                        <div className="h-1.5 w-12 bg-primary mx-auto mt-2 rounded-full" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+                        {/* Connecting Line (Desktop) */}
+                        <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-0.5 border-t-2 border-dashed border-border z-0" />
+
+                        {[
+                            {
+                                step: "01",
+                                title: "Audit Sources",
+                                description: "We Audit Your Current Buyer Sources find where you're losing leads",
+                                icon: CalendarIcon,
+                            },
+                            {
+                                step: "02",
+                                title: "Ads System",
+                                description: "We Build Your Meta Ads System targeted to serious buyers in your area",
+                                icon: Clock,
+                            },
+                            {
+                                step: "03",
+                                title: "Site Visits",
+                                description: "You Get Qualified Site Visits Scalable results without the guesswork",
+                                icon: ArrowRight,
+                            },
+                        ].map((item, idx) => (
+                            <div key={idx} className="relative z-10 flex flex-col items-center text-center group">
+                                <div className="w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center mb-6 shadow-xl shadow-primary/20 group-hover:scale-110 transition-transform duration-300">
+                                    <item.icon className="w-8 h-8" />
+                                    <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-foreground text-background text-xs font-black flex items-center justify-center border-4 border-card">
+                                        {item.step}
+                                    </div>
+                                </div>
+                                <h3 className="text-xl font-black mb-3 text-foreground">{item.title}</h3>
+                                <p className="text-muted-foreground font-medium leading-relaxed px-4">
+                                    {item.description}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+
+                <div ref={bookingSectionRef} className="flex flex-col lg:flex-row gap-12 justify-center items-stretch">
                     <div className="flex-1 flex justify-center items-center p-4 bg-muted/30 rounded-2xl border border-border/50">
                         <div className="transform scale-110 origin-center">
                             <CalendarComponent
@@ -382,7 +457,7 @@ export default function BookCalendar() {
                                                     size="lg"
                                                     disabled={isTaken}
                                                     className={cn(
-                                                        "w-full justify-start font-bold transition-all duration-300 h-12 relative",
+                                                        "w-full justify-center font-bold transition-all duration-300 h-12 relative",
                                                         selectedTime === time && "ring-2 ring-primary ring-offset-2 scale-105",
                                                         isTaken && "opacity-50 line-through border-dashed cursor-not-allowed grayscale"
                                                     )}
@@ -415,6 +490,9 @@ export default function BookCalendar() {
                                     Book Now
                                     <ArrowRight className="w-5 h-5 ml-2" />
                                 </Button>
+                                <p className="text-center text-sm font-bold text-muted-foreground/80 mt-4">
+                                    No contracts. No retainer. Cancel anytime.
+                                </p>
                             </>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-center p-12 border-2 border-dashed border-border/50 rounded-2xl bg-muted/20">
@@ -427,9 +505,9 @@ export default function BookCalendar() {
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={(open) => setIsDialogOpen(open)}>
-                <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl max-h-[90vh] flex flex-col">
+                <DialogContent className="sm:max-w-[650px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl max-h-[90vh] flex flex-col">
                     <div className="h-2 bg-primary shrink-0" />
-                    <div className="p-8 overflow-y-auto custom-scrollbar">
+                    <div className="p-10 overflow-y-auto custom-scrollbar">
                         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
                             <div className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold mt-0.5 shrink-0">!</div>
                             <p className="text-sm font-medium text-red-800 leading-tight">
@@ -473,16 +551,21 @@ export default function BookCalendar() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="phone" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Phone *</Label>
-                                        <Input
-                                            id="phone"
-                                            name="phone"
-                                            required
-                                            type="tel"
-                                            className="h-12"
-                                            value={formData.phone}
-                                            onChange={handleInputChange}
-                                            placeholder="+91..."
-                                        />
+                                        <div className="flex gap-0">
+                                            <div className="h-12 px-4 flex items-center justify-center bg-muted border border-r-0 border-input rounded-l-md font-bold text-muted-foreground shrink-0">
+                                                +91
+                                            </div>
+                                            <Input
+                                                id="phone"
+                                                name="phone"
+                                                required
+                                                type="tel"
+                                                className="h-12 rounded-l-none"
+                                                value={formData.phone}
+                                                onChange={handleInputChange}
+                                                placeholder="98765 43210"
+                                            />
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="email" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Email *</Label>
