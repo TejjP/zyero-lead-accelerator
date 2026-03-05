@@ -127,7 +127,7 @@ export default function BookCalendar() {
     const sessionBookedSlots = useRef<Record<string, string[]>>({});
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtt-D4t0zSyqk06-xnr7MUVOOVtQ6M_o15_a14n4VvgRqzD8jJl5u8l3ciVmH9pt6VCg/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhReO5neFmWv50sEPb75bK-HKer6sdPX4ZHHa85QJUBH9D6kTMrrE2ohf9ekuwogWXww/exec";
 
     const fetchBookingsForDate = async (dateObj: Date, isBackground = false) => {
         const dateStr = format(dateObj, "yyyy-MM-dd");

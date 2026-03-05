@@ -19,6 +19,11 @@ function doPost(e) {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sheet = ss.getSheetByName(SHEET_NAME);
 
+    // Format phone number if present
+    if (data.phone) {
+      data.phone = formatPhoneNumber(data.phone);
+    }
+
     // SECURITY CHECK: Only Admin actions require token
     if (data.action && data.action !== "book") {
       if (data.token !== SECRET_TOKEN) {
@@ -323,4 +328,26 @@ function sendNotification(type, data) {
       // we do NOT rethrow here to prevent crashing the main booking/unblock logic
     }
   }
+}
+
+/**
+ * Formats phone numbers to +91 XXXXXXXXXX
+ * Handles 10-digit (adds +91) and 12-digit (replaces 91 with +91)
+ */
+function formatPhoneNumber(phone) {
+  if (!phone) return "";
+  let cleaned = ("" + phone).replace(/\D/g, "");
+  
+  // 10 digits: 9355721123 -> +91 9355721123
+  if (cleaned.length === 10) {
+    return "+91 " + cleaned;
+  }
+  
+  // 12 digits starting with 91: 919355721123 -> +91 9355721123
+  // OR 919193557212 -> +91 9193557212
+  if (cleaned.length === 12 && cleaned.startsWith("91")) {
+    return "+91 " + cleaned.substring(2);
+  }
+  
+  return phone; // Return as-is if no match
 }
