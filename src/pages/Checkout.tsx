@@ -24,7 +24,7 @@ export default function Checkout() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const price = plan === "starter" ? "₹49,999" : plan === "growth" ? "₹80,000" : "Custom";
+    const price = plan === "starter" ? "₹49,999" : plan === "growth" ? "₹89,000" : "Custom";
 
     // Auto-scroll to top
     useEffect(() => {
@@ -42,7 +42,7 @@ export default function Checkout() {
 
         let amount = 0;
         if (plan === "starter") amount = 4999900;
-        else if (plan === "growth") amount = 8000000; // 5 INR = 500 paise
+        else if (plan === "growth") amount = 8900000; // 5 INR = 500 paise
         else {
             toast.error("Please contact support for custom plans");
             setIsSubmitting(false);

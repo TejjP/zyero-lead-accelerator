@@ -20,7 +20,7 @@ const pricingTiers = [
     },
     {
         name: "Growth",
-        price: "₹5",
+        price: "₹89,000",
         description: "Ideal for growing developers and teams looking to scale predictably.",
         features: [
             "Verified Buyer Leads (Upto 150)",
