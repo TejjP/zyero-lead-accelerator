@@ -127,7 +127,7 @@ export default function BookCalendar() {
     const sessionBookedSlots = useRef<Record<string, string[]>>({});
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhReO5neFmWv50sEPb75bK-HKer6sdPX4ZHHa85QJUBH9D6kTMrrE2ohf9ekuwogWXww/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwjkCC-BhexEPQFkH4cptY_0f71vdfI3WCUSEVSLKOq3IGEHFnveYU0P_BFHGULQWAnlA/exec";
 
     const fetchBookingsForDate = async (dateObj: Date, isBackground = false) => {
         const dateStr = format(dateObj, "yyyy-MM-dd");
@@ -257,7 +257,7 @@ export default function BookCalendar() {
 
             const payload = {
                 ...formData,
-                phone: `+91${formData.phone}`,
+                phone: formData.phone,
                 company: enhancedCompany,
                 description: fullDetails,
                 date: date ? format(date, "yyyy-MM-dd") : "",

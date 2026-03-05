@@ -129,6 +129,9 @@ function handleBooking(sheet, data) {
     "CONFIRMED" // Status
   ]);
 
+  // Force Column 4 (Phone) to be Plain Text to prevent #ERROR!
+  sheet.getRange(sheet.getLastRow(), 4).setNumberFormat("@");
+
   createCalendarEvent(data);
   sendNotification("NEW BOOKING", data);
   
@@ -277,8 +280,9 @@ function createCalendarEvent(data) {
   const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
   const start = new Date(data.date + " " + data.time);
   const end = new Date(start.getTime() + (15 * 60 * 1000));
+  const eventDescription = `Client: ${data.name}\nPhone: ${data.phone || "N/A"}\nEmail: ${data.email}\n\nDetails: ${data.description || ""}`;
   calendar.createEvent(`ZyeroLead: ${data.name}`, start, end, {
-    description: data.description,
+    description: eventDescription,
     guests: data.email,
     sendInvites: true
   });
@@ -310,22 +314,25 @@ function isSlotTaken(sheet, date, time) {
 }
 
 function sendNotification(type, data) {
-  // Safety check: if no email provided, don't try
-  if (!ADMIN_EMAIL) return;
+  console.log(`Attempting to send email [${type}] to ${ADMIN_EMAIL}`);
+  if (!ADMIN_EMAIL) {
+    console.error("ADMIN_EMAIL is missing!");
+    return;
+  }
 
   const subject = `[${type}] Meeting on ${data.date} at ${data.time}`;
   const body = `Action: ${type}\nClient: ${data.name || "Admin"}\nEmail: ${data.email || "N/A"}\nPhone: ${data.phone || "N/A"}\nDate: ${data.date}\nTime: ${data.time}\nDetails: ${data.description || ""}`;
   
-  // Try both MailApp and GmailApp as fallbacks
   try {
     MailApp.sendEmail(ADMIN_EMAIL, subject, body);
+    console.log("MailApp success");
   } catch (e) {
-    console.warn("MailApp failed, trying GmailApp...");
+    console.warn("MailApp failed: " + e.toString());
     try {
       GmailApp.sendEmail(ADMIN_EMAIL, subject, body);
+      console.log("GmailApp success");
     } catch (e2) {
-      console.error("All notification methods failed:", e2.toString());
-      // we do NOT rethrow here to prevent crashing the main booking/unblock logic
+      console.error("All notification methods failed: " + e2.toString());
     }
   }
 }
@@ -336,18 +343,20 @@ function sendNotification(type, data) {
  */
 function formatPhoneNumber(phone) {
   if (!phone) return "";
-  let cleaned = ("" + phone).replace(/\D/g, "");
   
-  // 10 digits: 9355721123 -> +91 9355721123
+  // Clean all non-digits
+  let cleaned = String(phone).replace(/\D/g, "");
+  
+  // If it already has +91 (12 digits starting with 91), return +91 XXXXXXXXXX
+  if (cleaned.length === 12 && cleaned.startsWith("91")) {
+     return "+91 " + cleaned.substring(2);
+  }
+  
+  // If 10 digits, add prefix
   if (cleaned.length === 10) {
     return "+91 " + cleaned;
   }
   
-  // 12 digits starting with 91: 919355721123 -> +91 9355721123
-  // OR 919193557212 -> +91 9193557212
-  if (cleaned.length === 12 && cleaned.startsWith("91")) {
-    return "+91 " + cleaned.substring(2);
-  }
-  
-  return phone; // Return as-is if no match
+  // If it's something else (too short/long), just return original to be safe
+  return phone;
 }

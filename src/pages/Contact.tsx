@@ -40,7 +40,7 @@ export default function Contact() {
   };
 
   // reusing the same script as BookCall for unified data entry
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhReO5neFmWv50sEPb75bK-HKer6sdPX4ZHHa85QJUBH9D6kTMrrE2ohf9ekuwogWXww/exec";
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwjkCC-BhexEPQFkH4cptY_0f71vdfI3WCUSEVSLKOq3IGEHFnveYU0P_BFHGULQWAnlA/exec";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
