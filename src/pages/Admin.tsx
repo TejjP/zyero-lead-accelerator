@@ -81,7 +81,7 @@ export default function Admin() {
 
     // SECURITY: Matches the token in the Google Apps Script
     const ADMIN_TOKEN = "zyero_admin_2025_safe";
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwjkCC-BhexEPQFkH4cptY_0f71vdfI3WCUSEVSLKOq3IGEHFnveYU0P_BFHGULQWAnlA/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmp4LXOg6sUUnK41tNk_G3PZ46BHXy5IbhvvEsdsggnicgXZTyhZtaQ3rKR9QFYULlpQ/exec";
 
     const fetchBookings = async () => {
         setIsLoading(true);
