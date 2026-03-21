@@ -16,7 +16,10 @@ import {
     Unlock,
     User,
     Mail,
-    Phone
+    Phone,
+    Settings as SettingsIcon,
+    ToggleLeft,
+    ToggleRight
 } from "lucide-react";
 import {
     Table,
@@ -78,10 +81,12 @@ export default function Admin() {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [busySlots, setBusySlots] = useState<string[]>([]);
     const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+    const [allowSundays, setAllowSundays] = useState(false);
+    const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
 
     // SECURITY: Matches the token in the Google Apps Script
     const ADMIN_TOKEN = "zyero_admin_2025_safe";
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmp4LXOg6sUUnK41tNk_G3PZ46BHXy5IbhvvEsdsggnicgXZTyhZtaQ3rKR9QFYULlpQ/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxP7yQPYNxUxu_w2sFXl3JaD1zTpOkOHuhpAUiC8YbrSjVLsrg744y_7ePHELkOzZNzw/exec";
 
     const fetchBookings = async () => {
         setIsLoading(true);
@@ -110,6 +115,25 @@ export default function Admin() {
             setIsLoadingSlots(false);
         }
     };
+
+    const fetchSettings = async () => {
+        try {
+            const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSettings`);
+            const data = await response.json();
+            if (data.allowSundays !== undefined) {
+                setAllowSundays(data.allowSundays);
+            }
+        } catch (error) {
+            console.error("Failed to fetch settings", error);
+        }
+    };
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchBookings();
+            fetchSettings();
+        }
+    }, [isAuthenticated]);
 
     useEffect(() => {
         if (selectedDate && isAuthenticated) {
@@ -169,6 +193,33 @@ export default function Admin() {
                 name: booking.name,
                 email: booking.email
             });
+        }
+    };
+
+    const handleToggleSunday = async () => {
+        setIsUpdatingSettings(true);
+        const newValue = !allowSundays;
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                mode: "cors",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({ 
+                    action: "updateSettings", 
+                    token: ADMIN_TOKEN,
+                    key: "allowSundays",
+                    value: newValue
+                }),
+            });
+            const result = await response.json();
+            if (result.status === "success") {
+                setAllowSundays(newValue);
+                toast({ title: "Settings Updated", description: "Sunday bookings " + (newValue ? "enabled" : "disabled") });
+            }
+        } catch (error) {
+            toast({ title: "Failed to update settings", variant: "destructive" });
+        } finally {
+            setIsUpdatingSettings(false);
         }
     };
 
@@ -266,6 +317,10 @@ export default function Admin() {
                         <TabsTrigger value="availability" className="rounded-xl h-12 font-bold">
                             <CalendarIcon className="w-4 h-4 mr-2" />
                             Availability
+                        </TabsTrigger>
+                        <TabsTrigger value="settings" className="rounded-xl h-12 font-bold">
+                            <SettingsIcon className="w-4 h-4 mr-2" />
+                            Settings
                         </TabsTrigger>
                     </TabsList>
 
@@ -439,6 +494,41 @@ export default function Admin() {
                                             );
                                         })
                                     )}
+                                </div>
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="settings" className="space-y-6">
+                        <div className="max-w-2xl bg-card rounded-3xl border shadow-xl p-8">
+                            <h3 className="text-xl font-bold mb-8 flex items-center gap-2 text-primary">
+                                <SettingsIcon className="w-5 h-5" />
+                                Global Booking Rules
+                            </h3>
+                            
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between p-6 bg-muted/20 rounded-2xl border">
+                                    <div className="space-y-1">
+                                        <p className="font-bold text-lg">Allow Sunday Bookings</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            If enabled, users can book strategy calls on Sundays.
+                                        </p>
+                                    </div>
+                                    <Button 
+                                        onClick={handleToggleSunday} 
+                                        disabled={isUpdatingSettings}
+                                        variant={allowSundays ? "default" : "outline"}
+                                        className="rounded-xl h-12 px-6 font-bold"
+                                    >
+                                        {isUpdatingSettings ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <>
+                                                {allowSundays ? <ToggleRight className="w-6 h-6 mr-2" /> : <ToggleLeft className="w-6 h-6 mr-2" />}
+                                                {allowSundays ? "Enabled" : "Disabled"}
+                                            </>
+                                        )}
+                                    </Button>
                                 </div>
                             </div>
                         </div>

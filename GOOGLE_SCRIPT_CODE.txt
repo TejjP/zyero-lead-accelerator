@@ -9,6 +9,7 @@
 
 const SPREADSHEET_ID = "1LTvqampjZsG7V311jKgG8zLkuKmODLRfhuK9XUmq9-w"; 
 const SHEET_NAME = "Sheet1";
+const SETTINGS_SHEET_NAME = "Settings";
 const CALENDAR_ID = "primary"; // Uses your main Google Calendar
 const SECRET_TOKEN = "zyero_admin_2025_safe"; // Security for Admin actions
 const ADMIN_EMAIL = "zyerolead@gmail.com"; // Where notifications are sent
@@ -40,6 +41,8 @@ function doPost(e) {
         return handleUnblock(sheet, data);
       case "reschedule":
         return handleReschedule(sheet, data);
+      case "updateSettings":
+        return handleUpdateSettings(ss, data);
       case "testEmail":
         sendNotification("TEST CONNECTION", data);
         return jsonResponse({ status: "success", message: "Test email sent to " + ADMIN_EMAIL });
@@ -61,6 +64,10 @@ function doGet(e) {
     if (action === "getAll") {
       if (e.parameter.token !== SECRET_TOKEN) throw new Error("Unauthorized");
       return jsonResponse({ bookings: fetchAllBookings(sheet) });
+    }
+
+    if (action === "getSettings") {
+      return jsonResponse(getSettings(ss));
     }
 
     // Default: Return busy slots for a date (Sheet + Calendar)
@@ -252,6 +259,55 @@ function fetchAllBookings(sheet) {
     });
   }
   return bookings;
+}
+
+// SETTINGS MANAGEMENT
+function getSettings(ss) {
+  let settingsSheet = ss.getSheetByName(SETTINGS_SHEET_NAME);
+  if (!settingsSheet) {
+    settingsSheet = ss.insertSheet(SETTINGS_SHEET_NAME);
+    settingsSheet.appendRow(["key", "value"]);
+    settingsSheet.appendRow(["allowSundays", "false"]);
+  }
+
+  const rows = settingsSheet.getDataRange().getValues();
+  const settings = {};
+  for (let i = 1; i < rows.length; i++) {
+    settings[rows[i][0]] = rows[i][1];
+  }
+  
+  // Convert string booleans
+  if (settings.allowSundays === "true") settings.allowSundays = true;
+  if (settings.allowSundays === "false") settings.allowSundays = false;
+  
+  return settings;
+}
+
+function handleUpdateSettings(ss, data) {
+  let settingsSheet = ss.getSheetByName(SETTINGS_SHEET_NAME);
+  if (!settingsSheet) {
+    settingsSheet = ss.insertSheet(SETTINGS_SHEET_NAME);
+    settingsSheet.appendRow(["key", "value"]);
+  }
+
+  const rows = settingsSheet.getDataRange().getValues();
+  const key = data.key;
+  const value = String(data.value);
+  
+  let found = false;
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] === key) {
+      settingsSheet.getRange(i + 1, 2).setValue(value);
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    settingsSheet.appendRow([key, value]);
+  }
+
+  return jsonResponse({ status: "success", message: "Settings updated" });
 }
 
 // HELPERS

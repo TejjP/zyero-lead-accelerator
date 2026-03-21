@@ -10,7 +10,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
-import { Clock, Loader2, ArrowLeft, ArrowRight, Calendar as CalendarIcon } from "lucide-react";
+import { Clock, Loader2, ArrowLeft, ArrowRight, Calendar as CalendarIcon, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -36,40 +36,39 @@ const timeSlots = [
 
 export default function BookCalendar() {
     const navigate = useNavigate();
+    const { toast } = useToast();
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [step, setStep] = useState(1);
-    const { toast } = useToast();
+    const [showDetailsForm, setShowDetailsForm] = useState(false);
+    const [sundayEnabled, setSundayEnabled] = useState(false);
+
+    const [formData, setFormData] = useState({
+        name: "",
+        phone: "",
+        email: "",
+        dealsClosed: "",
+        clientSourcing: "",
+        targetMarket: "",
+        role: "",
+        company: ""
+    });
+
     const bookingSectionRef = useRef<HTMLDivElement>(null);
 
     const scrollToBooking = () => {
         bookingSectionRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    const [formData, setFormData] = useState({
-        name: "",
-        email: "",
-        phone: "",
-        company: "",
-        dealsClosed: "",
-        clientSourcing: "",
-        targetMarket: "",
-        role: "",
-    });
-
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-
         if (name === "phone") {
-            // Only allow digits and max 10 characters
             const cleaned = value.replace(/\D/g, "").slice(0, 10);
-            setFormData((prev) => ({ ...prev, [name]: cleaned }));
+            setFormData(prev => ({ ...prev, [name]: cleaned }));
             return;
         }
-
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleBookingClick = () => {
@@ -84,7 +83,8 @@ export default function BookCalendar() {
         // Aggressive background sync: Refresh availability while user is filling the form
         fetchBookingsForDate(date, true);
 
-        setIsDialogOpen(true);
+        setShowDetailsForm(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleNextStep = () => {
@@ -117,6 +117,7 @@ export default function BookCalendar() {
         }
 
         setStep(2);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const [bookedSlots, setBookedSlots] = useState<string[]>([]);
@@ -127,7 +128,7 @@ export default function BookCalendar() {
     const sessionBookedSlots = useRef<Record<string, string[]>>({});
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmp4LXOg6sUUnK41tNk_G3PZ46BHXy5IbhvvEsdsggnicgXZTyhZtaQ3rKR9QFYULlpQ/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxP7yQPYNxUxu_w2sFXl3JaD1zTpOkOHuhpAUiC8YbrSjVLsrg744y_7ePHELkOzZNzw/exec";
 
     const fetchBookingsForDate = async (dateObj: Date, isBackground = false) => {
         const dateStr = format(dateObj, "yyyy-MM-dd");
@@ -180,6 +181,21 @@ export default function BookCalendar() {
         }
         return null;
     };
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSettings`);
+                const data = await response.json();
+                if (data.allowSundays !== undefined) {
+                    setSundayEnabled(data.allowSundays);
+                }
+            } catch (error) {
+                console.error("Failed to fetch settings", error);
+            }
+        };
+        fetchSettings();
+    }, []);
 
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
@@ -240,7 +256,7 @@ export default function BookCalendar() {
                     const isTakenNow = latestBookedAtServer.some(s => normalizeTime(s) === normalizeTime(selectedTime));
                     if (isTakenNow) {
                         setIsSubmitting(false);
-                        setIsDialogOpen(false);
+                        setShowDetailsForm(false);
                         setSelectedTime(null);
                         toast({
                             title: "Slot Recently Taken",
@@ -315,51 +331,240 @@ export default function BookCalendar() {
         }
     };
 
-    const handleClose = () => {
-        setIsDialogOpen(false);
+    const handleBack = () => {
+        setShowDetailsForm(false);
         setStep(1);
-        setFormData({
-            name: "",
-            email: "",
-            phone: "",
-            company: "",
-            dealsClosed: "",
-            clientSourcing: "",
-            targetMarket: "",
-            role: ""
-        });
-        setSelectedTime(null);
+    }
+
+    if (showDetailsForm) {
+        return (
+            <div className="min-h-screen bg-background p-4 md:p-8 animate-in fade-in duration-500">
+                <div className="max-w-3xl mx-auto">
+                    <Button
+                        variant="ghost"
+                        onClick={handleBack}
+                        className="mb-8 hover:bg-muted transition-colors rounded-full px-6"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" /> Back to Selection
+                    </Button>
+
+                    <div className="bg-card rounded-3xl p-6 md:p-10 border border-border shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-2 bg-primary" />
+                        
+                        <div className="mb-10 p-6 bg-primary/5 rounded-2xl border border-primary/10 space-y-3">
+                            <h3 className="text-xl font-black flex items-center gap-2">
+                                <CheckCircle className="w-5 h-5 text-primary" />
+                                Why Zyero?
+                            </h3>
+                            <p className="text-muted-foreground font-medium leading-relaxed">
+                                Zyero Lead specializes in delivering <span className="text-foreground font-bold">verified, high-intent buyer leads</span> for real estate developers and brokers. 
+                                We help you build predictable listing systems that work 24/7, eliminating wasted ad spend and unqualified leads.
+                            </p>
+                        </div>
+
+                        <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                            <div className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold mt-0.5 shrink-0">!</div>
+                            <p className="text-sm font-medium text-red-800 leading-tight">
+                                This call is for serious professionals looking to build a predictable listing system.
+                            </p>
+                        </div>
+
+                        <div className="mb-10">
+                            <h2 className="text-3xl font-black mb-2">Your Details</h2>
+                            <p className="text-muted-foreground">
+                                {step === 1 ? (
+                                    <>
+                                        Booking for{" "}
+                                        {date && selectedTime && (
+                                            <span className="font-bold text-primary">
+                                                {format(date, "MMMM do")} @ {selectedTime}
+                                            </span>
+                                        )}
+                                    </>
+                                ) : (
+                                    "Almost done! Just a few more questions."
+                                )}
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-8">
+                            {step === 1 && (
+                                <div className="space-y-6 animate-in slide-in-from-right-8 duration-500">
+                                    <div className="space-y-3">
+                                        <Label htmlFor="name" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Name *</Label>
+                                        <Input
+                                            id="name"
+                                            name="name"
+                                            required
+                                            className="h-14 text-lg rounded-xl"
+                                            value={formData.name}
+                                            onChange={handleInputChange}
+                                            placeholder="John Doe"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <Label htmlFor="phone" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Phone *</Label>
+                                        <div className="flex gap-0 group">
+                                            <div className="h-14 px-5 flex items-center justify-center bg-muted border border-r-0 border-input rounded-l-xl font-bold text-muted-foreground shrink-0 group-focus-within:border-primary transition-colors">
+                                                +91
+                                            </div>
+                                            <Input
+                                                id="phone"
+                                                name="phone"
+                                                required
+                                                type="tel"
+                                                className="h-14 text-lg rounded-l-none rounded-r-xl"
+                                                value={formData.phone}
+                                                onChange={handleInputChange}
+                                                placeholder="98765 43210"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <Label htmlFor="email" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Email *</Label>
+                                        <Input
+                                            id="email"
+                                            name="email"
+                                            required
+                                            type="email"
+                                            className="h-14 text-lg rounded-xl"
+                                            value={formData.email}
+                                            onChange={handleInputChange}
+                                            placeholder="john@example.com"
+                                        />
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-primary/20"
+                                        onClick={handleNextStep}
+                                    >
+                                        Continue
+                                        <ArrowRight className="w-5 h-5 ml-2" />
+                                    </Button>
+                                </div>
+                            )}
+
+                            {step === 2 && (
+                                <div className="space-y-6 animate-in slide-in-from-right-8 duration-500">
+                                    <div className="space-y-3">
+                                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">How many deals have you closed this year? *</Label>
+                                        <Select
+                                            onValueChange={(value) => setFormData(prev => ({ ...prev, dealsClosed: value }))}
+                                            value={formData.dealsClosed}
+                                        >
+                                            <SelectTrigger className="h-14 text-lg rounded-xl">
+                                                <SelectValue placeholder="Select deals" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="0">0</SelectItem>
+                                                <SelectItem value="1-3">1-3</SelectItem>
+                                                <SelectItem value="3-5">3-5</SelectItem>
+                                                <SelectItem value="5-10">5-10</SelectItem>
+                                                <SelectItem value="10+">10+</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">How are you finding clients now? *</Label>
+                                        <Select
+                                            onValueChange={(value) => setFormData(prev => ({ ...prev, clientSourcing: value }))}
+                                            value={formData.clientSourcing}
+                                        >
+                                            <SelectTrigger className="h-14 text-lg rounded-xl">
+                                                <SelectValue placeholder="Select source" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="referrals">Referrals</SelectItem>
+                                                <SelectItem value="ads/social media">Ads / Social Media</SelectItem>
+                                                <SelectItem value="cold calling">Cold Calling</SelectItem>
+                                                <SelectItem value="mix of everthing">Mix of everything</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <Label htmlFor="targetMarket" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Which city or market do you primarily operate in? *</Label>
+                                        <Input
+                                            id="targetMarket"
+                                            name="targetMarket"
+                                            required
+                                            className="h-14 text-lg rounded-xl"
+                                            value={formData.targetMarket}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, targetMarket: e.target.value }))}
+                                            placeholder="e.g. Mumbai, Navi Mumbai"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">What's your role? *</Label>
+                                        <Select
+                                            onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
+                                            value={formData.role}
+                                        >
+                                            <SelectTrigger className="h-14 text-lg rounded-xl">
+                                                <SelectValue placeholder="Select role" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Real Estate broker">Real Estate Broker</SelectItem>
+                                                <SelectItem value="realtor/Agent">Realtor / Agent</SelectItem>
+                                                <SelectItem value="Builder/Developer">Builder / Developer</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="flex gap-4 pt-4">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="flex-1 h-14 font-bold rounded-xl"
+                                            disabled={isSubmitting}
+                                            onClick={() => setStep(1)}
+                                        >
+                                            Back
+                                        </Button>
+                                        <Button type="submit" className="flex-[2] h-14 text-lg font-bold rounded-xl shadow-lg shadow-primary/20" disabled={isSubmitting}>
+                                            {isSubmitting ? "Processing..." : "Confirm Booking"}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </form>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-            <div className="w-full max-w-4xl bg-card rounded-3xl p-8 border border-border shadow-2xl animate-fade-up">
-                <div className="text-center mb-8 space-y-6">
-                    <div className="space-y-4">
-                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight text-foreground leading-tight">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-4xl bg-card rounded-3xl p-6 md:p-12 border border-border shadow-2xl animate-fade-up">
+                <div className="text-center mb-12 space-y-8">
+                    <div className="space-y-6">
+                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight text-foreground leading-tight">
                             Generate 10–20 Qualified Buyer Appointments in 90 Days
                         </h1>
-                        <p className="text-lg md:text-xl text-muted-foreground font-medium max-w-2xl mx-auto">
+                        <p className="text-lg md:text-2xl text-muted-foreground font-medium max-w-3xl mx-auto">
                             We help real estate developers build predictable buyer acquisition systems using targeted Meta ads.
                         </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-sm md:text-base font-bold text-foreground/80">
-                        <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full border border-border/50">
-                            <span className="text-green-600">✔</span> No broker dependency
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-4 text-sm md:text-base font-bold text-foreground/80">
+                        <div className="flex items-center gap-2 bg-muted/80 px-6 py-3 rounded-full border border-border/50">
+                            <CheckCircle className="w-5 h-5 text-green-600" /> No broker dependency
                         </div>
-                        <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full border border-border/50">
-                            <span className="text-green-600">✔</span> Pre-qualified buyers
+                        <div className="flex items-center gap-2 bg-muted/80 px-6 py-3 rounded-full border border-border/50">
+                            <CheckCircle className="w-5 h-5 text-green-600" /> Pre-qualified buyers
                         </div>
-                        <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full border border-border/50">
-                            <span className="text-green-600">✔</span> Consistent site visits
+                        <div className="flex items-center gap-2 bg-muted/80 px-6 py-3 rounded-full border border-border/50">
+                            <CheckCircle className="w-5 h-5 text-green-600" /> Consistent site visits
                         </div>
                     </div>
 
-                    <div className="pt-4">
+                    <div className="pt-6">
                         <button
                             onClick={scrollToBooking}
-                            className="inline-block bg-primary/10 text-primary px-8 py-3 rounded-full font-black text-xl md:text-2xl border border-primary/20 shadow-sm hover:bg-primary/20 transition-all cursor-pointer"
+                            className="inline-block bg-primary text-primary-foreground px-10 py-5 rounded-full font-black text-xl md:text-2xl shadow-xl shadow-primary/30 hover:scale-105 transition-transform cursor-pointer"
                         >
                             Book Your Free Strategy Call
                         </button>
@@ -367,16 +572,16 @@ export default function BookCalendar() {
                 </div>
 
                 {/* How It Works Section */}
-                <div className="mb-16">
-                    <div className="text-center mb-10">
-                        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90">
-                            How It Works
+                <div className="mb-20">
+                    <div className="text-center mb-12">
+                        <h2 className="text-2xl font-black uppercase tracking-widest text-primary">
+                            The Process
                         </h2>
-                        <div className="h-1.5 w-12 bg-primary mx-auto mt-2 rounded-full" />
+                        <div className="h-2 w-16 bg-primary mx-auto mt-4 rounded-full" />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10 relative">
                         {/* Connecting Line (Desktop) */}
-                        <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-0.5 border-t-2 border-dashed border-border z-0" />
+                        <div className="hidden md:block absolute top-[4.5rem] left-[15%] right-[15%] h-1 border-t-4 border-dotted border-border/50 z-0" />
 
                         {[
                             {
@@ -399,14 +604,14 @@ export default function BookCalendar() {
                             },
                         ].map((item, idx) => (
                             <div key={idx} className="relative z-10 flex flex-col items-center text-center group">
-                                <div className="w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center mb-6 shadow-xl shadow-primary/20 group-hover:scale-110 transition-transform duration-300">
-                                    <item.icon className="w-8 h-8" />
-                                    <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-foreground text-background text-xs font-black flex items-center justify-center border-4 border-card">
+                                <div className="w-20 h-20 rounded-3xl bg-primary text-primary-foreground flex items-center justify-center mb-8 shadow-xl shadow-primary/25 group-hover:rotate-6 transition-all duration-300">
+                                    <item.icon className="w-10 h-10" />
+                                    <div className="absolute -top-4 -right-4 w-10 h-10 rounded-2xl bg-foreground text-background text-sm font-black flex items-center justify-center border-4 border-card shadow-lg">
                                         {item.step}
                                     </div>
                                 </div>
-                                <h3 className="text-xl font-black mb-3 text-foreground">{item.title}</h3>
-                                <p className="text-muted-foreground font-medium leading-relaxed px-4">
+                                <h3 className="text-2xl font-black mb-4 text-foreground">{item.title}</h3>
+                                <p className="text-muted-foreground font-semibold leading-relaxed px-4">
                                     {item.description}
                                 </p>
                             </div>
@@ -415,31 +620,39 @@ export default function BookCalendar() {
                 </div>
 
 
-                <div ref={bookingSectionRef} className="flex flex-col lg:flex-row gap-12 justify-center items-stretch">
-                    <div className="flex-1 flex justify-center items-center p-4 bg-muted/30 rounded-2xl border border-border/50">
-                        <div className="transform scale-110 origin-center">
+                <div ref={bookingSectionRef} className="flex flex-col lg:flex-row gap-16 justify-center items-stretch pt-12 border-t border-border">
+                    <div className="flex-1 flex flex-col justify-center items-center p-8 bg-muted/30 rounded-3xl border border-border/50">
+                         <h3 className="text-xl font-bold mb-6 self-start text-primary uppercase tracking-wider">Step 1: Choose Date</h3>
+                        <div className="transform scale-110 md:scale-125 origin-center">
                             <CalendarComponent
                                 mode="single"
                                 selected={date}
                                 onSelect={setDate}
-                                className="rounded-xl"
-                                disabled={(date) => date < new Date() || date.getDay() === 0}
+                                className="rounded-xl bg-transparent"
+                                disabled={(date) => {
+                                    const today = new Date();
+                                    today.setHours(0, 0, 0, 0);
+                                    const isBeforeToday = date < today;
+                                    const isSunday = date.getDay() === 0;
+                                    return isBeforeToday || (isSunday && !sundayEnabled);
+                                }}
                             />
                         </div>
                     </div>
 
-                    <div className="flex-1 flex flex-col justify-between min-w-[300px] space-y-6">
+                    <div className="flex-1 flex flex-col justify-between min-w-[300px] space-y-8">
                         {date ? (
                             <>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-lg font-bold">
+                                <div className="space-y-6">
+                                    <h3 className="text-xl font-bold text-primary uppercase tracking-wider">Step 2: Choose Time</h3>
+                                    <div className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border">
+                                        <p className="text-lg font-black">
                                             {format(date, "EEEE, MMM do")}
                                         </p>
-                                        <div className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
-                                            <span className="relative flex h-2 w-2">
+                                        <div className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-green-50 text-green-600 border border-green-100">
+                                            <span className="relative flex h-2.5 w-2.5">
                                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
                                             </span>
                                             Live Sync
                                         </div>
@@ -457,16 +670,16 @@ export default function BookCalendar() {
                                                     size="lg"
                                                     disabled={isTaken}
                                                     className={cn(
-                                                        "w-full justify-center font-bold transition-all duration-300 h-12 relative",
-                                                        selectedTime === time && "ring-2 ring-primary ring-offset-2 scale-105",
-                                                        isTaken && "opacity-50 line-through border-dashed cursor-not-allowed grayscale"
+                                                        "w-full justify-center font-black transition-all duration-300 h-14 relative rounded-xl text-md",
+                                                        selectedTime === time && "ring-4 ring-primary/20 scale-105 shadow-xl",
+                                                        isTaken && "opacity-40 line-through border-dashed cursor-not-allowed grayscale bg-muted/50"
                                                     )}
                                                     onClick={() => !isTaken && setSelectedTime(time)}
                                                 >
-                                                    <Clock className={cn("w-4 h-4 mr-2", selectedTime === time ? "text-primary-foreground" : "text-primary")} />
+                                                    <Clock className={cn("w-5 h-5 mr-2", selectedTime === time ? "text-primary-foreground" : "text-primary")} />
                                                     {time}
                                                     {isTaken && (
-                                                        <span className="absolute right-2 text-[10px] uppercase tracking-tighter opacity-70">
+                                                        <span className="absolute -bottom-1 right-2 text-[9px] uppercase font-black text-red-500">
                                                             Booked
                                                         </span>
                                                     )}
@@ -474,212 +687,40 @@ export default function BookCalendar() {
                                             );
                                         })}
                                         {timeSlots.every(t => bookedSlots.some(s => t.trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, '') === s.trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, ''))) && (
-                                            <div className="col-span-2 text-center py-8 text-muted-foreground bg-orange-50/50 rounded-xl border border-orange-100">
-                                                <p className="font-bold text-orange-600">No Slots Available</p>
-                                                <p className="text-xs">All timings are currently blocked or booked.</p>
+                                            <div className="col-span-2 text-center py-10 text-muted-foreground bg-orange-50 rounded-2xl border border-orange-100 shadow-inner">
+                                                <p className="font-black text-orange-600 text-lg">Fully Booked</p>
+                                                <p className="text-sm font-medium">All timings for this date are currently unavailable.</p>
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
                                 <Button
-                                    className="w-full h-14 text-lg font-bold shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300"
+                                    className="w-full h-16 text-xl font-black rounded-2xl shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 transform active:scale-95"
                                     disabled={!selectedTime}
                                     onClick={handleBookingClick}
                                 >
-                                    Book Now
-                                    <ArrowRight className="w-5 h-5 ml-2" />
+                                    Proceed to Details
+                                    <ArrowRight className="w-6 h-6 ml-3" />
                                 </Button>
-                                <p className="text-center text-sm font-bold text-muted-foreground/80 mt-4">
-                                    No contracts. No retainer. Cancel anytime.
+                                <p className="text-center text-sm font-bold text-muted-foreground/60">
+                                    Trusted by 50+ Real Estate Developers
                                 </p>
                             </>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-center p-12 border-2 border-dashed border-border/50 rounded-2xl bg-muted/20">
-                                <CalendarIcon className="w-12 h-12 mb-4 opacity-20" />
-                                <p className="font-semibold">Select a date</p>
+                            <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-center p-12 border-4 border-dotted border-border/50 rounded-3xl bg-muted/10">
+                                <CalendarIcon className="w-16 h-16 mb-6 opacity-30 animate-pulse text-primary" />
+                                <h4 className="text-xl font-black text-foreground/70">Pick a Date</h4>
+                                <p className="font-medium mt-2">To see our available strategy call slots</p>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
-
-            <Dialog open={isDialogOpen} onOpenChange={(open) => setIsDialogOpen(open)}>
-                <DialogContent className="sm:max-w-[650px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl max-h-[90vh] flex flex-col">
-                    <div className="h-2 bg-primary shrink-0" />
-                    <div className="p-10 overflow-y-auto custom-scrollbar">
-                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-                            <div className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold mt-0.5 shrink-0">!</div>
-                            <p className="text-sm font-medium text-red-800 leading-tight">
-                                This call is for serious professionals looking to build a predictable listing system.
-                            </p>
-                        </div>
-                        <DialogHeader className="mb-8">
-                            <DialogTitle className="text-2xl font-black">
-                                Your Details
-                            </DialogTitle>
-                            <DialogDescription className="text-base pt-2">
-                                {step === 1 ? (
-                                    <>
-                                        Booking for{" "}
-                                        {date && selectedTime && (
-                                            <span className="font-bold text-primary block mt-1">
-                                                {format(date, "MMMM do")} @ {selectedTime}
-                                            </span>
-                                        )}
-                                    </>
-                                ) : (
-                                    "Almost done!"
-                                )}
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {step === 1 && (
-                                <div className="space-y-5 animate-in fade-in slide-in-from-right-8 duration-500">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Name *</Label>
-                                        <Input
-                                            id="name"
-                                            name="name"
-                                            required
-                                            className="h-12"
-                                            value={formData.name}
-                                            onChange={handleInputChange}
-                                            placeholder="John Doe"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Phone *</Label>
-                                        <div className="flex gap-0">
-                                            <div className="h-12 px-4 flex items-center justify-center bg-muted border border-r-0 border-input rounded-l-md font-bold text-muted-foreground shrink-0">
-                                                +91
-                                            </div>
-                                            <Input
-                                                id="phone"
-                                                name="phone"
-                                                required
-                                                type="tel"
-                                                className="h-12 rounded-l-none"
-                                                value={formData.phone}
-                                                onChange={handleInputChange}
-                                                placeholder="98765 43210"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Email *</Label>
-                                        <Input
-                                            id="email"
-                                            name="email"
-                                            required
-                                            type="email"
-                                            className="h-12"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
-                                            placeholder="john@example.com"
-                                        />
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        className="w-full h-12 font-bold"
-                                        onClick={handleNextStep}
-                                    >
-                                        Continue
-                                        <ArrowRight className="w-4 h-4 ml-2" />
-                                    </Button>
-                                </div>
-                            )}
-
-                            {step === 2 && (
-                                <div className="space-y-5 animate-in fade-in slide-in-from-right-8 duration-500">
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">How many deals have you closed this year? *</Label>
-                                        <Select
-                                            onValueChange={(value) => setFormData(prev => ({ ...prev, dealsClosed: value }))}
-                                            value={formData.dealsClosed}
-                                        >
-                                            <SelectTrigger className="h-12">
-                                                <SelectValue placeholder="Select deals" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="0">0</SelectItem>
-                                                <SelectItem value="1-3">1-3</SelectItem>
-                                                <SelectItem value="3-5">3-5</SelectItem>
-                                                <SelectItem value="5-10">5-10</SelectItem>
-                                                <SelectItem value="10+">10+</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">How are you finding clients now? *</Label>
-                                        <Select
-                                            onValueChange={(value) => setFormData(prev => ({ ...prev, clientSourcing: value }))}
-                                            value={formData.clientSourcing}
-                                        >
-                                            <SelectTrigger className="h-12">
-                                                <SelectValue placeholder="Select source" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="referrals">Referrals</SelectItem>
-                                                <SelectItem value="ads/social media">Ads / Social Media</SelectItem>
-                                                <SelectItem value="cold calling">Cold Calling</SelectItem>
-                                                <SelectItem value="mix of everthing">Mix of everything</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="targetMarket" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Which city or market do you primarily operate in? *</Label>
-                                        <Input
-                                            id="targetMarket"
-                                            name="targetMarket"
-                                            required
-                                            className="h-12"
-                                            value={formData.targetMarket}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, targetMarket: e.target.value }))}
-                                            placeholder="e.g. Mumbai, Navi Mumbai"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">What's your role? *</Label>
-                                        <Select
-                                            onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
-                                            value={formData.role}
-                                        >
-                                            <SelectTrigger className="h-12">
-                                                <SelectValue placeholder="Select role" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Real Estate broker">Real Estate Broker</SelectItem>
-                                                <SelectItem value="realtor/Agent">Realtor / Agent</SelectItem>
-                                                <SelectItem value="Builder/Developer">Builder / Developer</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="flex gap-3 pt-4">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="flex-1 h-12"
-                                            disabled={isSubmitting}
-                                            onClick={() => setStep(1)}
-                                        >
-                                            Back
-                                        </Button>
-                                        <Button type="submit" className="flex-[2] h-12 font-bold" disabled={isSubmitting}>
-                                            {isSubmitting ? "Processing..." : "Confirm Booking"}
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </form>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            
+            <p className="mt-12 text-sm text-muted-foreground/50 font-medium">
+                © 2026 Zyero Lead Accelerator. All rights reserved.
+            </p>
         </div>
     );
 }

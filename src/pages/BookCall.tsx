@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { CheckCircle, Clock, Users, Shield, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
+import { CheckCircle, Clock, Users, Shield, ArrowRight, Loader2, ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -93,7 +93,7 @@ export default function BookCall() {
   };
 
   // Google Apps Script URL for booking
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmp4LXOg6sUUnK41tNk_G3PZ46BHXy5IbhvvEsdsggnicgXZTyhZtaQ3rKR9QFYULlpQ/exec";
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxP7yQPYNxUxu_w2sFXl3JaD1zTpOkOHuhpAUiC8YbrSjVLsrg744y_7ePHELkOzZNzw/exec";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,184 +205,187 @@ export default function BookCall() {
         </div>
       </section>
 
-      {/* Booking Section */}
-      <section className="py-24">
+      {/* Info Section */}
+      <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-8 md:px-16 lg:px-24">
-          <div className="grid lg:grid-cols-2 gap-16 max-w-6xl mx-auto items-start">
-            {/* Left Column - Info */}
+          <div className="grid lg:grid-cols-3 gap-12 max-w-7xl mx-auto items-start">
+            {/* Left - Benefits */}
             <div className="space-y-8">
-              <div>
-                <h2 className="text-2xl font-bold mb-4">
-                  What You'll Get From This Call
-                </h2>
-                <ul className="space-y-4">
-                  {benefits.map((benefit) => (
-                    <li key={benefit} className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                      <span className="text-foreground/70">{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Trust Badges */}
-              <div className="grid grid-cols-3 gap-4">
-                {trustBadges.map((badge) => (
-                  <div
-                    key={badge.label}
-                    className="text-center p-4 bg-muted/50 rounded-xl"
-                  >
-                    <badge.icon className="w-6 h-6 text-primary mx-auto mb-2" />
-                    <p className="text-xs font-medium text-foreground/60">
-                      {badge.label}
-                    </p>
-                  </div>
+              <h2 className="text-3xl font-black mb-6">
+                What You'll Get
+              </h2>
+              <ul className="space-y-4">
+                {benefits.map((benefit) => (
+                  <li key={benefit} className="flex items-start gap-4 p-4 bg-card rounded-2xl border border-border/50">
+                    <CheckCircle className="w-6 h-6 text-primary shrink-0" />
+                    <span className="text-foreground font-semibold">{benefit}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
+            </div>
 
-              {/* Testimonial */}
-              <div className="glass-card p-6">
-                <p className="text-foreground/70 italic mb-4">
+            {/* Middle - Proof */}
+            <div className="space-y-8">
+               <h2 className="text-3xl font-black mb-6">Verified Results</h2>
+               <div className="glass-card p-8 rounded-[2.5rem]">
+                <p className="text-foreground/70 italic text-lg mb-6">
                   "The strategy call alone was worth it. Tej gave us insights
                   that immediately improved our campaigns — even before we
                   signed up."
                 </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center font-black text-xl">
                     R
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">Rahul M.</p>
-                    <p className="text-xs text-foreground/50">
+                    <p className="font-bold">Rahul M.</p>
+                    <p className="text-sm text-foreground/50">
                       Director, Property Group
                     </p>
                   </div>
                 </div>
               </div>
-
-              {/* Process */}
-              <div className="p-6 bg-muted/50 rounded-2xl">
-                <h3 className="font-semibold mb-4">How It Works</h3>
-                <ol className="space-y-3 text-sm text-foreground/70">
-                  <li className="flex items-start gap-3">
-                    <span className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold shrink-0">
-                      1
-                    </span>
-                    Book a slot that works for you
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold shrink-0">
-                      2
-                    </span>
-                    Provide your details and business context
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold shrink-0">
-                      3
-                    </span>
-                    We'll send you a calendar invitation
-                  </li>
-                </ol>
-              </div>
             </div>
 
-            {/* Right Column - Calendar */}
-            <div className="space-y-6 bg-background rounded-2xl p-6 border border-border/50 shadow-sm glass-card">
-              <div className="text-center mb-4">
-                <h3 className="font-semibold text-lg">Select a Date & Time</h3>
-                <p className="text-sm text-foreground/50">
-                  Times are in local timezone
-                </p>
-              </div>
-
-              <div className="flex flex-col md:flex-row gap-8 justify-center">
-                <div className="mx-auto">
-                  <CalendarComponent
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    className="rounded-md border shadow-sm p-3"
-                    disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
-                  />
-                </div>
-
-                {date && (
-                  <div className="space-y-3 min-w-[140px]">
-                    <p className="text-sm font-medium text-center md:text-left mb-2">
-                      Available Times
-                    </p>
-                    <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
-                      {isLoadingSlots ? (
-                        <div className="col-span-2 text-center py-4 text-muted-foreground animate-pulse">
-                          Syncing slots...
-                        </div>
-                      ) : (
-                        timeSlots.map((time) => {
-                          const normalizeTime = (t: string) => t.trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, '');
-                          const isTaken = bookedSlots.some(s => normalizeTime(s) === normalizeTime(time));
-
-                          if (isTaken) return null;
-
-                          return (
-                            <Button
-                              key={time}
-                              variant={selectedTime === time ? "default" : "outline"}
-                              size="sm"
-                              className={cn(
-                                "w-full justify-start text-xs",
-                                selectedTime === time && "bg-primary text-primary-foreground"
-                              )}
-                              onClick={() => setSelectedTime(time)}
-                            >
-                              <Clock className="w-3 h-3 mr-2" />
-                              {time}
-                            </Button>
-                          );
-                        })
-                      )}
+            {/* Right - Trust */}
+            <div className="space-y-8">
+               <h2 className="text-3xl font-black mb-6">Proven Track Record</h2>
+               <div className="grid grid-cols-1 gap-4">
+                {trustBadges.map((badge) => (
+                  <div
+                    key={badge.label}
+                    className="flex items-center gap-4 p-5 bg-card rounded-2xl border border-border/50"
+                  >
+                    <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
+                        <badge.icon className="w-6 h-6" />
                     </div>
+                    <p className="font-black text-foreground/80">
+                      {badge.label}
+                    </p>
                   </div>
-                )}
+                ))}
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-              <div className="pt-4 border-t border-border mt-4">
-                <Button
-                  className="w-full"
-                  size="lg"
-                  disabled={!date || !selectedTime}
-                  onClick={handleBookingClick}
-                >
-                  Proceed to Book
-                </Button>
-                {date && selectedTime && (
-                  <p className="text-xs text-center text-foreground/50 mt-2">
-                    Selected: {format(date, "MMM do")} at {selectedTime}
-                  </p>
-                )}
-              </div>
+      {/* Booking Section */}
+      <section className="py-32 px-4 bg-muted/10 min-h-screen">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-4xl md:text-6xl font-black tracking-tight">
+                BOOK YOUR STRATEGY CALL
+            </h2>
+            <div className="h-2 w-24 bg-primary mx-auto rounded-full" />
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto font-medium">
+                Choose a time that works best for our personalized session.
+            </p>
+          </div>
 
-              {/* Manual Booking Option */}
-              <div className="text-center space-y-4 pt-4 border-t border-border">
-                <p className="text-sm text-foreground/60">
-                  Prefer to book manually?
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button asChild variant="ghost" size="sm">
-                    <a href="tel:+919428623376">
-                      Call Us Directly
-                    </a>
-                  </Button>
-                  <Button asChild variant="ghost" size="sm">
-                    <a
-                      href="https://wa.me/919428623376"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      WhatsApp Us
-                    </a>
-                  </Button>
+          <div className="grid lg:grid-cols-5 gap-12 items-start">
+            {/* Step 1: Date */}
+            <div className="lg:col-span-3 bg-card rounded-[2.5rem] p-8 md:p-12 border border-border shadow-2xl">
+                 <h3 className="text-2xl font-black mb-8 flex items-center gap-3">
+                    <CalendarIcon className="w-7 h-7 text-primary" />
+                    1. Select a Date
+                </h3>
+                <div className="flex justify-center">
+                    <div className="transform md:scale-110 origin-center">
+                        <CalendarComponent
+                            mode="single"
+                            selected={date}
+                            onSelect={setDate}
+                            className="bg-transparent"
+                            disabled={(date) => {
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                return date < today || date.getDay() === 0;
+                            }}
+                        />
+                    </div>
                 </div>
-              </div>
+            </div>
+
+            {/* Step 2: Time */}
+            <div className="lg:col-span-2">
+                <div className="bg-card rounded-[2.5rem] p-8 md:p-12 border border-border shadow-2xl h-full sticky top-24">
+                    <h3 className="text-2xl font-black mb-8 flex items-center gap-3">
+                        <Clock className="w-7 h-7 text-primary" />
+                        2. Pick a Time
+                    </h3>
+
+                    {date ? (
+                      <div className="space-y-8">
+                        <div className="bg-muted/50 p-4 rounded-2xl border border-border mb-6">
+                            <p className="text-lg font-black text-center">{format(date, "EEEE, MMM do")}</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                          {isLoadingSlots ? (
+                            <div className="text-center py-16 text-muted-foreground">
+                                <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4 text-primary" />
+                                <p className="font-bold">Syncing availability...</p>
+                            </div>
+                          ) : (
+                            timeSlots.map((time) => {
+                              const normalizeTime = (t: string) => t.trim().toLowerCase().replace(/^0/, '').replace(/\s+/g, '');
+                              const isTaken = bookedSlots.some(s => normalizeTime(s) === normalizeTime(time));
+
+                              return (
+                                <Button
+                                  key={time}
+                                  variant={selectedTime === time ? "default" : "outline"}
+                                  disabled={isTaken}
+                                  className={cn(
+                                    "h-14 font-black text-lg rounded-xl transition-all relative border-2",
+                                    selectedTime === time && "ring-4 ring-primary/20 scale-[1.02] shadow-lg",
+                                    isTaken && "opacity-40 line-through grayscale cursor-not-allowed bg-muted"
+                                  )}
+                                  onClick={() => setSelectedTime(time)}
+                                >
+                                  {time}
+                                  {isTaken && <span className="absolute right-4 text-[10px] font-black uppercase text-red-500">Booked</span>}
+                                </Button>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        <Button
+                          className="w-full h-16 text-xl font-black rounded-2xl shadow-xl shadow-primary/30 mt-8 transform active:scale-95 transition-all"
+                          disabled={!selectedTime}
+                          onClick={handleBookingClick}
+                        >
+                          Proceed to Book
+                          <ArrowRight className="w-6 h-6 ml-3" />
+                        </Button>
+
+                        <div className="pt-8 border-t border-border mt-8 space-y-4">
+                            <p className="text-center text-sm font-bold text-muted-foreground/60">
+                                Prefer to book manually?
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <Button asChild variant="outline" className="flex-1 h-12 rounded-xl font-bold">
+                                    <a href="tel:+919428623376" className="flex items-center justify-center">
+                                        Call Directly
+                                    </a>
+                                </Button>
+                                <Button asChild variant="outline" className="flex-1 h-12 rounded-xl font-bold">
+                                    <a href="https://wa.me/919428623376" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
+                                        WhatsApp Us
+                                    </a>
+                                </Button>
+                            </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-64 flex flex-col items-center justify-center text-muted-foreground text-center p-8 border-4 border-dotted border-border rounded-[2rem] bg-muted/20">
+                          <CalendarIcon className="w-14 h-14 mb-4 opacity-20 animate-pulse" />
+                          <p className="font-black text-lg">Select a date to see times</p>
+                      </div>
+                    )}
+                </div>
             </div>
           </div>
         </div>
